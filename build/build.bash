@@ -28,9 +28,6 @@ if [[ -z "${IS_WITHIN_DOCKER}" ]]; then
 		-t ${IMG} \
 		- < "${DIR}/Dockerfile"
 
-	# Clear build directory.
-	rm -rf "${DIR}/bin" && mkdir "${DIR}/bin"
-
 	# Run this same script, but from within
 	# the build container.
 	docker run \
