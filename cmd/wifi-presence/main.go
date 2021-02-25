@@ -97,6 +97,7 @@ func run(ctx context.Context, appName string) error {
 		mqttPassword string
 		debounce     time.Duration
 		verbose      bool
+		version      bool
 	}{
 		apName: hostName,
 		hostapdSocks: func() string {
@@ -114,6 +115,7 @@ func run(ctx context.Context, appName string) error {
 		mqttPrefix: appName,
 		debounce:   10 * time.Second,
 		verbose:    false,
+		version:    false,
 	}
 
 	flag.StringVar(&args.apName, "apName", args.apName, "Access point name")
@@ -126,6 +128,7 @@ func run(ctx context.Context, appName string) error {
 	flag.DurationVar(&args.debounce, "debounce", args.debounce, "Time to wait until considering a station disconnected. Examples: 5s, 1m")
 	flag.BoolVar(&args.verbose, "verbose", args.verbose, "Verbose logging")
 	flag.BoolVar(&args.verbose, "v", args.verbose, "Verbose logging (alias)")
+	flag.BoolVar(&args.version, "version", args.version, "Print version and exit")
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [options]\n\nOptions:\n", appName)
 		flag.PrintDefaults()
@@ -146,6 +149,11 @@ func run(ctx context.Context, appName string) error {
 		fmt.Fprintf(os.Stderr, helpTxt, string(connectEx), string(statusEx))
 	}
 	flag.Parse()
+
+	if args.version {
+		fmt.Printf("wifi-presence v%s\n", version)
+		return nil
+	}
 
 	if args.apName == "" {
 		return errors.New("apName cannot be blank")

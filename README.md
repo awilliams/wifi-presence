@@ -35,7 +35,7 @@ Usage: wifi-presence [options]
 
 Options:
   -apName string
-    	Access point name (default "adam-mbp-work-eth")
+    	Access point name (default "hostname")
   -debounce duration
     	Time to wait until considering a station disconnected. Examples: 5s, 1m (default 10s)
   -hostapd.socks string
@@ -43,7 +43,7 @@ Options:
   -mqtt.addr string
     	MQTT broker address, e.g "tcp://mqtt.broker:1883"
   -mqtt.id string
-    	MQTT client ID (default "wifi-presence.adam-mbp-work-eth")
+    	MQTT client ID (default "wifi-presence.hostname")
   -mqtt.password string
     	MQTT password (optional)
   -mqtt.prefix string
@@ -53,6 +53,8 @@ Options:
   -v	Verbose logging (alias)
   -verbose
     	Verbose logging
+  -version
+    	Print version and exit
 
 About:
 wifi-presence monitors a WiFi access point (AP) and publishes events to an MQTT topic
@@ -78,12 +80,12 @@ $mqtt.prefix/$apName/$clientMAC
 The body of the connect disconnect messages is JSON. Example:
 
 {
-  "ap": "adam-mbp-work-eth",
+  "ap": "MyRouter",
   "ssid": "wifi-name",
   "bssid": "XX:XX:XX:XX:XX:XX",
   "mac": "ab:cd:ef:12:34:56",
   "action": "connect",
-  "timestamp": "2021-02-11T15:31:32.985445-07:00"
+  "timestamp": "2021-02-25T10:16:31.455852-07:00"
 }
 
 The program will publish a status message when starting and exiting
@@ -95,7 +97,7 @@ The body of the message is JSON. Example:
 
 {
   "status": "online",
-  "timestamp": "2021-02-11T15:31:32.985677-07:00"
+  "timestamp": "2021-02-25T10:16:31.45609-07:00"
 }
 ```
 

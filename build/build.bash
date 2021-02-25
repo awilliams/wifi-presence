@@ -10,7 +10,7 @@
 
 set -e
 
-IMG="wifi-presence/openwrt:latest"
+BUILDIMG="wifi-presence/openwrt:latest"
 
 if [[ -z "${IS_WITHIN_DOCKER}" ]]; then
 	# We are running on host, not within Docker.
@@ -23,9 +23,16 @@ if [[ -z "${IS_WITHIN_DOCKER}" ]]; then
 	# Define build directory.
 	DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
+	VERSION=$(cat ${DIR}/../cmd/wifi-presence/VERSION)
+	if [[ -z "${VERSION}" ]]; then
+		echo "VERSION not defined"
+		exit 1
+	fi
+	echo "Version: ${VERSION}"
+
 	# Build base image.
 	docker build \
-		-t ${IMG} \
+		-t ${BUILDIMG} \
 		- < "${DIR}/Dockerfile"
 
 	# Run this same script, but from within
@@ -33,10 +40,11 @@ if [[ -z "${IS_WITHIN_DOCKER}" ]]; then
 	docker run \
 		--rm \
 		--env IS_WITHIN_DOCKER=true \
+		--env VERSION="${VERSION}" \
 		--workdir /home/build/openwrt \
 		--volume "${DIR}/..":/SRC:ro \
 		--volume "${DIR}/bin":/OUT \
-		${IMG} \
+		${BUILDIMG} \
 		/SRC/build/build.bash
 
 	# List artifacts.
@@ -62,7 +70,7 @@ sed -i \
 	.config
 
 # Compile.
-make package/wifi-presence/compile
+PKG_RELEASE=1 PKG_VERSION="${VERSION}" make package/wifi-presence/compile
 
 # Move resulting package to output directory.
 find ./bin/packages -name 'wifi-presence*.ipk' -exec mv -t /OUT/ {} +

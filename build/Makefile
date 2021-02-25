@@ -1,4 +1,12 @@
-GO_TAG:=1.15.8
+GO_TAG:=1.16
+
+.PHONY: all
+all: clean wifi-presence.ipk wifi-presence.linux.mips wifi-presence.darwin.amd64
+	@ echo "Building all"
+
+.PHONY: clean
+clean:
+	rm -rf bin/
 
 .PHONY: wifi-presence.ipk
 wifi-presence.ipk:

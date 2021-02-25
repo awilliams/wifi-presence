@@ -3,8 +3,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=wifi-presence
-PKG_VERSION:=0.0.1
-PKG_RELEASE:=1
+PKG_VERSION?=DEV
+PKG_RELEASE?=1
 PKG_LICENSE:=MIT
 
 PKG_BUILD_DEPENDS:=golang/host
@@ -25,7 +25,7 @@ include $(HOME)/packages/lang/golang/golang-package.mk
 define Package/wifi-presence
   SECTION:=net
   CATEGORY:=Network
-  TITLE:=Publish WiFi events to MQTT for presence detection
+  TITLE:=Publishes WiFi events to MQTT for presence detection
   URL:=https://github.com/awilliams/wifi-presence
 endef
 
@@ -42,10 +42,8 @@ endef
 define Package/wifi-presence/postinst
 #!/bin/sh
 cat <<EOF
-
 Please configure wifi-presence by editing the configuration
 file: /etc/config/wifi-presence.
-
 EOF
 endef
 
