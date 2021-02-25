@@ -144,7 +144,7 @@ func (p *Presence) HandleStationEvent(event StationEvent) {
 		client.latest = event
 
 	case ActionDisconnect:
-		if event.AP != client.latest.AP {
+		if !(event.AP == client.latest.AP && event.SSID == client.latest.SSID) {
 			// Disconnect from previous AP.
 			break
 		}

@@ -206,6 +206,30 @@ func TestPresence(t *testing.T) {
 				// At 1 index, no state change.
 			},
 		},
+
+		{
+			name: "same-AP-diff-SSID",
+			events: []StationEvent{
+				{
+					MAC:       mac1,
+					AP:        "A",
+					SSID:      "ONE",
+					Action:    ActionConnect,
+					Timestamp: now,
+				},
+				{
+					MAC:       mac1,
+					AP:        "A",
+					SSID:      "TWO",
+					Action:    ActionDisconnect,
+					Timestamp: now.Add(1 * time.Minute),
+				},
+			},
+			expectations: map[int]bool{
+				0: true,
+				// At 1 index, no state change.
+			},
+		},
 	}
 
 	for _, tc := range cases {
