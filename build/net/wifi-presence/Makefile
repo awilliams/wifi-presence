@@ -36,7 +36,7 @@ Publish WiFi client connect and disconnect events to MQTT.
 endef
 
 define Package/wifi-presence/conffiles
-/etc/config/wifi-presenece
+/etc/config/wifi-presence
 endef
 
 define Package/wifi-presence/postinst
@@ -53,7 +53,8 @@ define Build/Prepare
 	$(Build/Patch)
 endef
 
-# Package install instructions; create a directory inside the package to hold our executable, and then copy the executable we built previously into the folder
+# Package install instructions; create a directory inside the package to hold our executable,
+# and then copy the executable we built previously into the folder
 define Package/wifi-presence/install
 	$(call GoPackage/Package/Install/Bin,$(PKG_INSTALL_DIR))
 
