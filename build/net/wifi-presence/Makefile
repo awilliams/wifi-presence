@@ -19,7 +19,7 @@ GO_PKG_BUILD_PKG:=$(GO_PKG)/cmd/wifi-presence
 SOURCE_DIR:=/SRC
 
 include $(INCLUDE_DIR)/package.mk
-include $(HOME)/packages/lang/golang/golang-package.mk
+include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
 
 # Package definition; instructs on how and where our package will appear in the overall configuration menu ('make menuconfig')
 define Package/wifi-presence

@@ -10,7 +10,7 @@
 
 set -e
 
-BUILDIMG="wifi-presence/openwrt:latest"
+BUILDIMG="wifi-presence/openwrt:${SDK}"
 
 if [[ -z "${IS_WITHIN_DOCKER}" ]]; then
 	# We are running on host, not within Docker.
@@ -32,6 +32,7 @@ if [[ -z "${IS_WITHIN_DOCKER}" ]]; then
 
 	# Build base image.
 	docker build \
+		--build-arg SDK=${SDK} \
 		-t ${BUILDIMG} \
 		- < "${DIR}/Dockerfile"
 
@@ -58,11 +59,11 @@ fi
 # Add this directory as a feed source.
 echo "src-link local /SRC/build" >> feeds.conf
 
-# Update this feed.
+# Update and install this package.
 ./scripts/feeds update local
-./scripts/feeds install -a -p local
+./scripts/feeds install wifi-presence
 
-# Create default .config file.
+# Create/update default .config file.
 make defconfig
 # Enable build of our package.
 sed -i \

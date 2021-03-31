@@ -1,16 +1,30 @@
 GO_TAG:=1.16
 
 .PHONY: all
-all: clean wifi-presence.ipk wifi-presence.linux.mips wifi-presence.darwin.amd64
+all: clean wifi-presence.ipq806x.ipk wifi-presence.ath79.ipk
 	@ echo "Building all"
 
 .PHONY: clean
 clean:
 	rm -rf bin/
 
-.PHONY: wifi-presence.ipk
-wifi-presence.ipk:
-	@./build.bash
+.PHONY: wifi-presence.ipq806x.ipk
+wifi-presence.ipq806x.ipk:
+	@SDK=ipq806x-generic-19.07.7 ./build.bash
+
+.PHONY: wifi-presence.ath79.ipk
+wifi-presence.ath79.ipk:
+	@SDK=ath79-generic-19.07.7 ./build.bash
+
+.PHONY: shell
+shell:
+	docker run \
+		--rm \
+		-it \
+		--workdir /home/build/openwrt \
+		--volume $(shell cd .. && pwd):/SRC:ro \
+		--volume $(shell cd bin && pwd):/OUT \
+		wifi-presence/openwrt:ath79-generic-19.07.7
 
 .PHONY: wifi-presence.linux.mips
 wifi-presence.linux.mips:
