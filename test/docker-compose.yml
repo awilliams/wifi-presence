@@ -1,0 +1,21 @@
+services:
+  homeassistant:
+    container_name: 'ha'
+    image: 'homeassistant/home-assistant:2022.2.9'
+    volumes:
+      - './ha.yaml:/config/configuration.yaml'
+    ports:
+      - '8123:8123'
+    depends_on:
+      - mosquitto
+
+  mosquitto:
+    container_name: mosquitto
+    image: eclipse-mosquitto
+    volumes:
+      - './mosquitto.conf:/mosquitto/config/mosquitto.conf:ro'
+    ports:
+      - '1883:1883'
+
+volumes:
+  config:
