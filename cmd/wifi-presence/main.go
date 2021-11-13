@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -28,16 +29,9 @@ const (
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
+	// Main program context which terminates when signal is received.
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
-
-	// Cancel context when a terminating signal is received.
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		log.Printf("Received signal %q, exiting...", <-sigs)
-		cancel()
-	}()
 
 	if err := run(ctx, appName); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
@@ -193,7 +187,7 @@ func run(ctx context.Context, appName string) error {
 				return args.mqttUsername, args.mqttPassword
 			}))
 		}
-		o.SetConnectionLostHandler(func(c mqtt.Client, err error) {
+		o.SetConnectionLostHandler(func(_ mqtt.Client, err error) {
 			mqttErr <- fmt.Errorf("MQTT connection lost: %w", err)
 		})
 	}
@@ -260,12 +254,19 @@ func run(ctx context.Context, appName string) error {
 // in the given directory.
 func findSockets(dir string) []string {
 	var sockets []string
-	_ = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.WalkDir(dir, func(path string, de fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		// Match if file is a Unix domain socket.
-		if info.Mode()&os.ModeSocket != 0 {
+
+		// The "global" control interface cannot be used for wifi-presence
+		// purposes, e.g. getting station information.
+		if filepath.Base(path) == "global" {
+			return nil
+		}
+
+		// Test if file is a Unix domain socket.
+		if de.Type()&os.ModeSocket != 0 {
 			sockets = append(sockets, path)
 		}
 		return nil
