@@ -2,8 +2,12 @@
 
 include $(TOPDIR)/rules.mk
 
+# Source settings (i.e. where to find the source codes)
+# This is a custom variable, used below
+SOURCE_DIR:=/wifi-presence
+
 PKG_NAME:=wifi-presence
-PKG_VERSION?=DEV
+PKG_VERSION:=$(shell cat /wifi-presence/cmd/wifi-presence/VERSION)
 PKG_RELEASE?=1
 PKG_LICENSE:=MIT
 
@@ -13,10 +17,6 @@ PKG_USE_MIPS16:=0
 
 GO_PKG:=github.com/awilliams/wifi-presence
 GO_PKG_BUILD_PKG:=$(GO_PKG)/cmd/wifi-presence
-
-# Source settings (i.e. where to find the source codes)
-# This is a custom variable, used below
-SOURCE_DIR:=/SRC
 
 include $(INCLUDE_DIR)/package.mk
 include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
