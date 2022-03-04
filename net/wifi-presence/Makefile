@@ -3,7 +3,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=wifi-presence
-PKG_VERSION:=0.0.3
+PKG_VERSION:=0.1.0
 PKG_RELEASE?=1
 PKG_LICENSE:=MIT
 
@@ -33,7 +33,7 @@ endef
 
 # Package description; a more verbose description on what our package does
 define Package/wifi-presence/description
-WiFi presence detection. 
+WiFi presence detection.
 Publish WiFi client connect and disconnect events to MQTT.
 endef
 
