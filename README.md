@@ -75,7 +75,7 @@ wifi-presence [options]
 
 Options:
   -apName string
-    	Access point name (default "adam-mbp")
+    	Access point name (default "my-router")
   -debounce duration
     	Time to wait until considering a station disconnected. Examples: 5s, 1m (default 10s)
   -hass.autodiscovery
@@ -89,7 +89,7 @@ Options:
   -mqtt.addr string
     	MQTT broker address, e.g "tcp://mqtt.broker:1883"
   -mqtt.id string
-    	MQTT client ID (default "wifi-presence.adam-mbp")
+    	MQTT client ID (default "wifi-presence.my-router")
   -mqtt.password string
     	MQTT password (optional)
   -mqtt.prefix string
