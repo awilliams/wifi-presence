@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.0] - 2022-02-04
+###
+- Adds support for [Home Assistant MQTT Discovery](https://www.home-assistant.io/integrations/device_tracker.mqtt/)
+
+### Changed
+- Changes MQTT topic structure
+
 ## [v0.0.2] - 2021-02-25
 ### Added
 - Add `-version` flag
@@ -17,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v0.0.1] - 2021-02-15
 Initial beta release
 
-[Unreleased]: https://github.com/awilliams/wifi-presence/compare/v0.0.2...HEAD
+[Unreleased]: https://github.com/awilliams/wifi-presence/compare/v0.1.0...HEAD
+[v0.1.0]: https://github.com/awilliams/wifi-presence/compare/v0.0.2...v0.1.0
 [v0.0.2]: https://github.com/awilliams/wifi-presence/compare/v0.0.1...v0.0.2
 [v0.0.1]: https://github.com/awilliams/wifi-presence/releases/tag/v0.0.1
