@@ -3,7 +3,6 @@ module github.com/awilliams/wifi-presence
 go 1.16
 
 require (
-	github.com/eclipse/paho.mqtt.golang v1.3.0
-	golang.org/x/net v0.0.0-20201021035429-f5854403a974 // indirect
-	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
+	github.com/eclipse/paho.mqtt.golang v1.3.5
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )

@@ -1,0 +1,12 @@
+# github.com/eclipse/paho.mqtt.golang v1.3.5
+## explicit
+github.com/eclipse/paho.mqtt.golang
+github.com/eclipse/paho.mqtt.golang/packets
+# github.com/gorilla/websocket v1.4.2
+github.com/gorilla/websocket
+# golang.org/x/net v0.0.0-20200425230154-ff2c4b7c35a0
+golang.org/x/net/internal/socks
+golang.org/x/net/proxy
+# golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+## explicit
+golang.org/x/sync/errgroup
