@@ -44,8 +44,8 @@ start_service() {
 	procd_set_param command ${PROG}
 	[[ ! -z "${apName}" ]] && procd_append_param command "-apName=${apName}"
 	[[ ! -z "${debounce}" ]] && procd_append_param command "-debounce=${debounce}"
-	[[ ! -z "${hassAutodiscovery}" ]] && procd_append_param command "-hassAutodiscovery=${hassAutodiscovery}"
-	[[ ! -z "${hassPrefix}" ]] && procd_append_param command "-hassPrefix=${hassPrefix}"
+	[[ ! -z "${hassAutodiscovery}" ]] && procd_append_param command "-hass.autodiscovery=${hassAutodiscovery}"
+	[[ ! -z "${hassPrefix}" ]] && procd_append_param command "-hass.prefix=${hassPrefix}"
 	[[ ! -z "${hostapdSocks}" ]] && procd_append_param command "-hostapd.socks=${hostapdSocks}"
 	[[ ! -z "${mqttAddr}" ]] && procd_append_param command "-mqtt.addr=${mqttAddr}"
 	[[ ! -z "${mqttID}" ]] && procd_append_param command "-mqtt.id=${mqttID}"
