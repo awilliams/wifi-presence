@@ -1,7 +1,7 @@
 # wifi-presence ![CI](https://github.com/awilliams/wifi-presence/workflows/CI/badge.svg?branch=main) [![Go Reference](https://pkg.go.dev/badge/github.com/awilliams/wifi-presence.svg)](https://pkg.go.dev/github.com/awilliams/wifi-presence)
 
-Presence detection based on WiFi.
-Runs on OpenWRT access points and requires no special setup for WiFi client.
+Presence detection based on connection to a WiFi Access Point.
+Runs on OpenWRT access points and requires no special setup for WiFi clients.
 Client connect and disconnect events are published to MQTT.
 
 * **What**: Standalone application designed to run on WiFi routers.
@@ -9,13 +9,16 @@ Monitors WiFi client connect and disconnect events and publishes them to an MQTT
 * **Why**: Presence detection for home automation systems.
 * **How**: `wifi-presence` connects to [`hostapd`'s control interface](http://w1.fi/wpa_supplicant/devel/hostapd_ctrl_iface_page.html) to receive client connect and disconnect events.
 
-OpenWrt Requirements:
- * >= 20x series
- * OR [this commit](https://github.com/openwrt/openwrt/commit/1ccf4bb93b0304c3c32a8a31a711a6ab889fd47a)
+[OpenWrt](https://openwrt.org) Requirements:
+ * [Hostapd](https://openwrt.org/packages/pkgdata/hostapd) package installed
+   * OpenWrt series `21.02` or greater
+   * OR a building including [this commit](https://github.com/openwrt/openwrt/commit/1ccf4bb93b0304c3c32a8a31a711a6ab889fd47a)
 
 This program was designed for OpenWrt APs, but should work on any system meeting the following requirements:
  * Running [hostapd](http://w1.fi/hostapd/)
  * Linux operating system with supported architecture
+
+![wifi-presence diagram](./docs/diagram.png "Diagram of wifi-presence")
 
 ## Motivation
 
