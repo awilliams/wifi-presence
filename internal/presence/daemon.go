@@ -235,9 +235,15 @@ func (d *Daemon) Run(ctx context.Context) error {
 				// Avoid calling Stations on each hostap client unless
 				// necessary.
 				var err error
-				connected, err = d.connectedStations()
-				if err != nil {
-					return err
+				if connected, err = d.connectedStations(); err != nil {
+					var unknown hostapd.ErrUnknownCmd
+					if errors.As(err, &unknown) {
+						// At this point, we can still continue. The 'connected' map will be empty, meaning
+						// all stations will be considered disconnected. This is better than failing completely.
+						d.logger.Print("Unable to retrieve connected stations from hostapd. Marking all stations as disconnected.\nSee https://github.com/awilliams/wifi-presence/#hostapd-full-version for more information")
+					} else {
+						return err
+					}
 				}
 			}
 
@@ -317,7 +323,7 @@ func (d *Daemon) Run(ctx context.Context) error {
 					}
 				}
 
-				fmt.Fprintf(&logMsg, "  %s %s: %q\n", mac, change.String(), sta.name)
+				fmt.Fprintf(&logMsg, "  %q (%s): %s\n", sta.name, mac, change.String())
 			}
 
 			return nil

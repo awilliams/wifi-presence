@@ -14,8 +14,8 @@ type Handler struct {
 	onUndef        func(msg string) string
 	onPing         func() bool // Reply to PING with PONG unless onPing is defined and returns false.
 	onStatus       func() StatusResp
-	onStationFirst func() (StationResp, bool)
-	onStationNext  func(mac string) (StationResp, bool)
+	onStationFirst func() (resp StationResp, unknown bool, ok bool) // If unknown is true, then an "UNKNOWN COMMAND" response will be sent.
+	onStationNext  func(mac string) (resp StationResp, ok bool)
 	onAttach       func() <-chan string
 	onDetach       func()
 }
@@ -26,11 +26,11 @@ func DefaultHostAPDHandler(status StatusResp, stations []StationResp) *Handler {
 	var h Handler
 	h.OnPing(func() bool { return true })
 	h.OnStatus(func() StatusResp { return status })
-	h.OnStationFirst(func() (StationResp, bool) {
+	h.OnStationFirst(func() (StationResp, bool, bool) {
 		if len(stations) > 0 {
-			return stations[0], true
+			return stations[0], false, true
 		}
-		return StationResp{}, false
+		return StationResp{}, false, false
 	})
 	h.OnStationNext(func(mac string) (StationResp, bool) {
 		for i, s := range stations {
@@ -118,17 +118,17 @@ func (h *Handler) handleStatus() (StatusResp, bool) {
 
 // OnStationFirst registers a callback which determines the response
 // to a STA-FIRST message.
-func (h *Handler) OnStationFirst(f func() (StationResp, bool)) {
+func (h *Handler) OnStationFirst(f func() (resp StationResp, unknown, ok bool)) {
 	h.Lock()
 	h.onStationFirst = f
 	h.Unlock()
 }
 
-func (h *Handler) handleStationFirst() (StationResp, bool) {
+func (h *Handler) handleStationFirst() (StationResp, bool, bool) {
 	h.Lock()
 	defer h.Unlock()
 	if h.onStationFirst == nil {
-		return StationResp{}, false
+		return StationResp{}, false, false
 	}
 	return h.onStationFirst()
 }

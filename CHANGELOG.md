@@ -5,9 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Adds support for hostapd-mini (non-full version). When using this version of hostapd, wifi-presence will consider all devices as disconnected at startup.
+
+### Changed
 
 ## [v0.1.0] - 2022-02-04
-###
+### Added
 - Adds support for [Home Assistant MQTT Discovery](https://www.home-assistant.io/integrations/device_tracker.mqtt/)
 
 ### Changed

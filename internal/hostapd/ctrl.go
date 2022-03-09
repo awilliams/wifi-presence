@@ -1,6 +1,7 @@
 package hostapd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -20,7 +21,21 @@ const (
 	respAttach      = "OK"
 	cmdDetach       = "DETACH"
 	respDetach      = "OK"
+	unknownCommand  = "UNKNOWN COMMAND"
 )
+
+// ErrTerminating is returned by attach when and if the control
+// interface terminates the connection. This can be because
+// WiFi interface configuration was changed and hostapd is restarting.
+var ErrTerminating = errors.New("wpa_supplicant is exiting")
+
+// ErrUnknownCmd is returned when the hostapd socket returns an unknownCommand
+// response.
+type ErrUnknownCmd string
+
+func (e ErrUnknownCmd) Error() string {
+	return fmt.Sprintf("sent command %q, received unknown command response", string(e))
+}
 
 // newCtrl returns a new ctrl using the given connection.
 func newCtrl(cn *conn, rTimeout, wTimeout time.Duration) (*ctrl, error) {
@@ -74,6 +89,10 @@ func (c *ctrl) cmd(cmd string, resp func(p []byte) error) error {
 		return fmt.Errorf("read error from %q command: %w", cmd, err)
 	}
 
+	if bytes.HasPrefix(c.buf[:n], []byte(unknownCommand)) {
+		return ErrUnknownCmd(cmd)
+	}
+
 	return resp(c.buf[:n])
 }
 
@@ -108,7 +127,10 @@ func (c *ctrl) stationFirst() (Station, bool, error) {
 			return nil
 		}
 		ok = true
-		return s.parse(resp)
+		if err := s.parse(resp); err != nil {
+			return fmt.Errorf("command %q error: %w", cmdStationFirst, err)
+		}
+		return nil
 	})
 }
 
@@ -128,11 +150,6 @@ func (c *ctrl) stationNext(mac string) (Station, bool, error) {
 		return s.parse(resp)
 	})
 }
-
-// ErrTerminating is returned by attach when and if the control
-// interface terminates the connection. This can be because
-// WiFi interface configuration was changed and hostapd is restarting.
-var ErrTerminating = errors.New("wpa_supplicant is exiting")
 
 // attach requests that the control interface send unsolicited
 // event messages. These include station connection and disconnect events.

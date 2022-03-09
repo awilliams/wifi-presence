@@ -9,14 +9,24 @@ Monitors WiFi client connect and disconnect events and publishes them to an MQTT
 * **Why**: Presence detection for home automation systems.
 * **How**: `wifi-presence` connects to [`hostapd`'s control interface](http://w1.fi/wpa_supplicant/devel/hostapd_ctrl_iface_page.html) to receive client connect and disconnect events.
 
-[OpenWrt](https://openwrt.org) Requirements:
- * [Hostapd](https://openwrt.org/packages/pkgdata/hostapd) package installed
-   * OpenWrt series `21.02` or greater
-   * OR a building including [this commit](https://github.com/openwrt/openwrt/commit/1ccf4bb93b0304c3c32a8a31a711a6ab889fd47a)
-
 This program was designed for OpenWrt APs, but should work on any system meeting the following requirements:
  * Running [hostapd](http://w1.fi/hostapd/)
- * Linux operating system with supported architecture
+ * Linux operating system on supported architecture
+
+[OpenWrt](https://openwrt.org) Requirements:
+ * [Hostapd](https://openwrt.org/packages/pkgdata/hostapd) package installed
+ * For improved capabilities, use the "full" version of [hostapd](https://openwrt.org/packages/pkgdata/hostapd).
+   See [hostapd full version](#hostapd-full-version) for more information.
+
+**Contents**:
+ * [Motivation](#motivation)
+ * [Configuration](#configuration)
+ * [Home Assistant](#home-assistant)
+ * [Usage](#usage)
+   * [hostapd](#hostapd)
+   * [MQTT](#mqtt)
+ * [OpenWrt](#openwrt)
+ * [iOS](#ios) (randomized MAC addresses)
 
 ![wifi-presence diagram](./docs/diagram.png "Diagram of wifi-presence")
 
@@ -108,17 +118,35 @@ Options:
     	Print version and exit
 ```
 
-### hostapd/wpa_supplicant:
+### hostapd
 
 wifi-presence requires hostapd running with control interface(s) enabled.
-The hostapd option is 'ctrl_interface'. More information:
+This is the default for OpenWrt.
+The hostapd configuration option is `ctrl_interface`. More information:
 https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf
 
 The wifi-presence -hostapd.socks option should correspond to the socket
 locations defined by 'ctrl_interface'. Multiple sockets can be monitored
 (one socket per radio is created by hostapd).
 
-### MQTT:
+#### hostapd full version
+
+OpenWrt includes a stripped down version of hostapd, which is the default.
+This stripped down version is compatible with wifi-presence, but prevents wifi-presence from getting a list of connected devices at startup.
+In this case, all devices will be considered "disconnected" until a (re)-connect is seen.
+
+The full version of hostapd can be installed to improve wifi-presence.
+When using the full version, wifi-presence will query hostapd for a list of connected devices at startup/when receiving new configuration.
+Any connected stations will immediately be considered "connected", triggering a corresponding MQTT message for each.
+
+The full version is included as part of various packages. For example, commands to install the full version using `wpad`:
+
+```shell
+opkg remove wpad-basic-wolfssl
+opkg install wpad-wolfssl
+```
+
+### MQTT
 
 wifi-presence publishes and subscribes to an MQTT broker.
 The -mqtt.prefix flag can be used to change the topic prefix,

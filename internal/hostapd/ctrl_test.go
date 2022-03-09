@@ -2,6 +2,7 @@ package hostapd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path"
 	"testing"
@@ -75,6 +76,51 @@ func TestCtrl_cmd(t *testing.T) {
 		default:
 			// pass
 		}
+	}
+}
+
+func TestCtrl_cmd_unknown(t *testing.T) {
+	hostapdErr := make(chan string, 1)
+	var handler hostapdtest.Handler
+	handler.OnUndef(func(msg string) string {
+		return unknownCommand
+	})
+
+	hostapd, err := hostapdtest.NewHostAPD(path.Join(t.TempDir(), "hap"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { hostapd.Close() })
+
+	go func() {
+		if err := hostapd.Serve(&handler); err != nil {
+			hostapdErr <- err.Error()
+		}
+	}()
+
+	c, err := newCtrl(newConn(t, hostapd.Addr), time.Second, time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	const cmd = "HI"
+	err = c.cmd(cmd, func(resp []byte) error {
+		t.Logf("cmd(%q): got response %q", cmd, string(resp))
+		return nil
+	})
+
+	var unknown ErrUnknownCmd
+	if !errors.As(err, &unknown) {
+		t.Fatalf("c.cmd(%q) err: %v (type: %T); want type %T", cmd, err, err, unknown)
+	} else {
+		t.Logf("c.cmd(%q) err (expected): %v", cmd, unknown)
+	}
+
+	select {
+	case err := <-hostapdErr:
+		t.Fatal(err)
+	default:
+		// pass
 	}
 }
 

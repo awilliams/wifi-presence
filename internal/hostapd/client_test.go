@@ -114,6 +114,35 @@ func TestClient_Stations(t *testing.T) {
 	}
 }
 
+func TestClient_Stations_unknownCmd(t *testing.T) {
+	hostapd, err := hostapdtest.NewHostAPD(path.Join(t.TempDir(), "hap"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { hostapd.Close() })
+
+	handler := hostapdtest.DefaultHostAPDHandler(hostapdtest.StatusResp{}, nil)
+	// Set the handler to respond with "UNKNOWN COMMAND" to the stationFirst request.
+	handler.OnStationFirst(func() (resp hostapdtest.StationResp, unknown, ok bool) {
+		return hostapdtest.StationResp{}, true, false
+	})
+	go hostapd.Serve(handler)
+
+	client, err := NewClient(t.TempDir(), hostapd.Addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	_, err = client.Stations()
+
+	var unknown ErrUnknownCmd
+	if !errors.As(err, &unknown) {
+		t.Fatalf("client.Stations() err: %v (type: %T); want type %T", err, err, unknown)
+	}
+	t.Logf("client.Stations() (expected) err: %v (type: %T)", err, err)
+}
+
 func TestClient_Attach(t *testing.T) {
 	hostapd, err := hostapdtest.NewHostAPD(path.Join(t.TempDir(), "hap"))
 	if err != nil {

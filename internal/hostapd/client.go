@@ -69,11 +69,11 @@ func (c *Client) Stations() ([]Station, error) {
 	var stations []Station
 
 	station, ok, err := c.ctrl.stationFirst()
-	if !ok {
-		return nil, nil
-	}
 	if err != nil {
 		return nil, err
+	}
+	if !ok {
+		return nil, nil
 	}
 	stations = append(stations, station)
 

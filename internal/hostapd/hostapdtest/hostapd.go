@@ -102,14 +102,19 @@ func (h *HostAPD) Serve(handler *Handler) error {
 			}
 
 		case msg == "STA-FIRST":
-			if station, ok := handler.handleStationFirst(); ok {
-				if err := h.WriteTo(station.encode(), raddr); err != nil {
-					return err
-				}
-			} else {
-				if err := h.WriteTo("", raddr); err != nil {
-					return err
-				}
+			var resp string
+
+			station, unknown, ok := handler.handleStationFirst()
+			switch {
+			case unknown:
+				resp = "UNKNOWN COMMAND"
+			case ok:
+				resp = station.encode()
+			default:
+				// Empty response
+			}
+			if err := h.WriteTo(resp, raddr); err != nil {
+				return err
 			}
 
 		case strings.HasPrefix(msg, "STA-NEXT"):

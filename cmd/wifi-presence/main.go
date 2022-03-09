@@ -77,11 +77,17 @@ func main() {
 
 	if err := run(ctx, appName); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		if errors.Is(err, hostapd.ErrTerminating) {
+
+		var unknownCmd hostapd.ErrUnknownCmd
+		switch {
+		case errors.Is(err, hostapd.ErrTerminating):
 			// Special exit code to indicate that hostapd indicated that
 			// the process should exit.
 			os.Exit(125)
+		case errors.As(err, &unknownCmd):
+			fmt.Fprintln(os.Stderr, "This error typically happens when the full version of 'hostapd' is not installed. See https://github.com/awilliams/wifi-presence/#hostapd-full-version for more information.")
 		}
+
 		os.Exit(1)
 	}
 }
