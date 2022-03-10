@@ -293,7 +293,7 @@ func (d *Daemon) Run(ctx context.Context) error {
 					attrs := hass.Attrs{
 						Name:         sta.name,
 						MAC:          sta.mac.String(),
-						Connected:    true,
+						IsConnected:  true,
 						APName:       d.apName,
 						SSID:         cs.hapStatus.SSID,
 						BSSID:        cs.hapStatus.BSSID,
@@ -385,7 +385,7 @@ func (d *Daemon) Run(ctx context.Context) error {
 					attrs := hass.Attrs{
 						Name:        sta.name,
 						MAC:         sta.mac.String(),
-						Connected:   true,
+						IsConnected: true,
 						APName:      d.apName,
 						SSID:        hap.status.SSID,
 						BSSID:       hap.status.BSSID,
@@ -450,7 +450,7 @@ func (d *Daemon) Run(ctx context.Context) error {
 						attrs := hass.Attrs{
 							Name:           sta.name,
 							MAC:            sta.mac.String(),
-							Connected:      false,
+							IsConnected:    false,
 							APName:         d.apName,
 							SSID:           hap.status.SSID,
 							BSSID:          hap.status.BSSID,

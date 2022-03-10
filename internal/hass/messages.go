@@ -46,8 +46,8 @@ type Device struct {
 // Attrs are a device's attributes.
 type Attrs struct {
 	Name            string     `json:"name"`
-	MAC             string     `json:"mac"`
-	Connected       bool       `json:"connected"`
+	MAC             string     `json:"mac_address"`
+	IsConnected     bool       `json:"is_connected"`
 	APName          string     `json:"ap_name"`
 	SSID            string     `json:"ssid"`
 	BSSID           string     `json:"bssid"`
