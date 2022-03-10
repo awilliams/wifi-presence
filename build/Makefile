@@ -1,4 +1,4 @@
-GO_TAG:=1.16
+GO_TAG:=latest
 
 .PHONY: all
 all: clean wifi-presence.ipq806x.ipk wifi-presence.ath79.ipk
@@ -30,7 +30,7 @@ shell:
 wifi-presence.linux.mips:
 	docker run \
 		--volume $(shell cd .. && pwd):/src:ro \
-		--volume $(shell cd bin && pwd):/OUT \
+		--volume $(shell pwd):/OUT \
 		--workdir /src \
 		--env GOARCH=mips \
 		--env GOOS=linux \
