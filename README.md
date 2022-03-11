@@ -185,7 +185,7 @@ The [OpenWrt](https://openwrt.org/about) project is
 > OpenWrt is a highly extensible GNU/Linux distribution for embedded devices (typically wireless routers).
 There are OpenWrt compatible packages of `wifi-presence` available for download.
 
-See the [build](./build) directory for more information.
+See the [openwrt](https://github.com/awilliams/wifi-presence/tree/openwrt) branch for more information.
 
 ## iOS
 
