@@ -6,7 +6,6 @@ packages: openwrt-${OPENWRT_VERSION}
 	mkdir -p out
 	docker run \
 		--rm \
-		--name "wifi-presence/build:${OPENWRT_VERSION}" \
 		--volume $(shell pwd)/package.bash:/package.bash:ro \
 		--volume $(shell pwd)/out:/OUT \
 		${IMG_TAG} \
