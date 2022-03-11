@@ -135,6 +135,52 @@ func NewDaemon(opts ...Opt) (*Daemon, error) {
 	return &d, nil
 }
 
+// Run starts the Daemon processing hostapd events and publishing
+// to MQTT. It blocks until it encounters an error or when the context
+// is cancelled.
+func (d *Daemon) Run(ctx context.Context) error {
+	eg, ctx := errgroup.WithContext(ctx)
+
+	errs := make(chan error, 1)
+
+	// Watch for any asynchronous errors.
+	eg.Go(func() error {
+		select {
+		case <-ctx.Done():
+			return nil
+		case err := <-errs:
+			return err
+		}
+	})
+
+	// Watch for configuration updates.
+	eg.Go(func() error {
+		d.logger.Printf("Subscribed to config topic: %q", d.hass.ConfigTopic())
+		return d.hass.SubscribeConfig(ctx, func(retained bool, cfg hass.Configuration) error {
+			return d.onConfigChange(ctx, retained, cfg)
+		})
+	})
+
+	// Watch each hostapd for events.
+	for _, hap := range d.haps {
+		d.logger.Printf("Connected to AP\n  SSID: %q\n  BSSID: %q\n  CHANNEL: %02d\n  STATE: %q\n",
+			hap.status.SSID,
+			hap.status.BSSID,
+			hap.status.Channel,
+			hap.status.State,
+		)
+
+		hap := hap
+		eg.Go(func() error {
+			return hap.client.Attach(ctx, func(event hostapd.Event) error {
+				return d.onHostapdEvent(ctx, hap, event, errs)
+			})
+		})
+	}
+
+	return eg.Wait()
+}
+
 const (
 	staNoChange staChange = iota
 	staRemoved
@@ -159,323 +205,300 @@ func (s staChange) String() string {
 	}
 }
 
-// Run starts the Daemon processing hostapd events and publishing
-// to MQTT. It blocks until it encounters an error or when the context
-// is cancelled.
-func (d *Daemon) Run(ctx context.Context) error {
-	eg, ctx := errgroup.WithContext(ctx)
+func (d *Daemon) onConfigChange(ctx context.Context, retained bool, cfg hass.Configuration) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
-	errs := make(chan error, 1)
+	// Diff the new vs the current configuration.
 
-	// Watch for any asynchronous errors.
-	eg.Go(func() error {
-		select {
-		case <-ctx.Done():
-			return nil
-		case err := <-errs:
+	changes := make(map[MAC]staChange, len(cfg.Devices)+len(d.stations))
+	var hasUpdates bool
+	for _, devCfg := range cfg.Devices {
+		var mac MAC
+		if err := mac.Decode(devCfg.MAC); err != nil {
 			return err
 		}
-	})
 
-	// Watch for configuration updates.
-	eg.Go(func() error {
-		d.logger.Printf("Subscribed to config topic: %q", d.hass.ConfigTopic())
-		return d.hass.SubscribeConfig(ctx, func(retained bool, cfg hass.Configuration) error {
-			d.mu.Lock()
-			defer d.mu.Unlock()
+		sta, ok := d.stations[mac]
+		switch {
+		case !ok:
+			changes[mac] = staAdded
+			hasUpdates = true
+		case sta.name != devCfg.Name:
+			changes[mac] = staUpdated
+			hasUpdates = true
+		default:
+			changes[mac] = staNoChange
+		}
 
-			// Diff the new vs the current configuration.
-
-			changes := make(map[MAC]staChange, len(cfg.Devices)+len(d.stations))
-			var hasUpdates bool
-			for _, devCfg := range cfg.Devices {
-				var mac MAC
-				if err := mac.Decode(devCfg.MAC); err != nil {
-					return err
-				}
-
-				sta, ok := d.stations[mac]
-				switch {
-				case !ok:
-					changes[mac] = staAdded
-					hasUpdates = true
-				case sta.name != devCfg.Name:
-					changes[mac] = staUpdated
-					hasUpdates = true
-				default:
-					changes[mac] = staNoChange
-				}
-
-				sta.name = devCfg.Name
-				sta.mac = mac
-				d.stations[mac] = sta
-			}
-			// Find previously configured stations that are no longer
-			// present in the new configuration.
-			for mac := range d.stations {
-				if _, ok := changes[mac]; !ok {
-					changes[mac] = staRemoved
-					delete(d.stations, mac)
-				}
-			}
-
-			var logMsg strings.Builder
-			fmt.Fprintf(&logMsg, "Received config update (retained=%v):\n", retained)
-			defer func() {
-				d.logger.Print(logMsg.String())
-			}()
-
-			if len(changes) == 0 {
-				fmt.Fprintln(&logMsg, "(no stations configured)")
-				return nil
-			}
-
-			var connected map[MAC]connectedStation
-			if hasUpdates {
-				// Avoid calling Stations on each hostap client unless
-				// necessary.
-				var err error
-				if connected, err = d.connectedStations(); err != nil {
-					var unknown hostapd.ErrUnknownCmd
-					if errors.As(err, &unknown) {
-						// At this point, we can still continue. The 'connected' map will be empty, meaning
-						// all stations will be considered disconnected. This is better than failing completely.
-						d.logger.Print("Unable to retrieve connected stations from hostapd. Marking all stations as disconnected.\nSee https://github.com/awilliams/wifi-presence/#hostapd-full-version for more information")
-					} else {
-						return err
-					}
-				}
-			}
-
-			// Process each configuration change.
-			for mac, change := range changes {
-				sta := d.stations[mac] // May be zero value.
-
-				switch change {
-				case staNoChange:
-					// Nothing to do here.
-
-				case staAdded, staUpdated:
-					if d.hassAutoDisc {
-						err := d.hass.RegisterDeviceTracker(ctx, hass.Discovery{
-							Name: sta.name,
-							MAC:  sta.mac.String(),
-						})
-						if err != nil {
-							return err
-						}
-					}
-
-					// Check whether this station is connected or not.
-					cs, ok := connected[mac]
-					if !ok {
-						sta.connected = false
-						d.stations[mac] = sta
-
-						// Station is not connected.
-						pubCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-						defer cancel()
-						if err := d.hass.StationNotHome(pubCtx, mac.String()); err != nil {
-							return err
-						}
-						break
-					}
-
-					// Station is connected.
-
-					sta.connected = true
-					sta.connectedAt = time.Now().Add(-cs.sta.Connected)
-					sta.bssid = cs.hapStatus.BSSID
-					d.stations[mac] = sta
-
-					d.db.cancel(mac)
-
-					attrs := hass.Attrs{
-						Name:         sta.name,
-						MAC:          sta.mac.String(),
-						IsConnected:  true,
-						APName:       d.apName,
-						SSID:         cs.hapStatus.SSID,
-						BSSID:        cs.hapStatus.BSSID,
-						ConnectedAt:  &sta.connectedAt,
-						ConnectedFor: int(time.Since(sta.connectedAt).Seconds()),
-					}
-
-					pubCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-					defer cancel()
-					if err := d.hass.StationHome(pubCtx, mac.String()); err != nil {
-						return err
-					}
-
-					pubCtx, cancel = context.WithTimeout(ctx, 2*time.Second)
-					defer cancel()
-					if err := d.hass.StationAttributes(pubCtx, mac.String(), attrs); err != nil {
-						return err
-					}
-
-				case staRemoved:
-					d.db.cancel(mac)
-
-					if d.hassAutoDisc {
-						if err := d.hass.UnregisterDeviceTracker(ctx, mac.String()); err != nil {
-							return err
-						}
-					}
-				}
-
-				fmt.Fprintf(&logMsg, "  %q (%s): %s\n", sta.name, mac, change.String())
-			}
-
-			return nil
-		})
-	})
-
-	// Watch each hostapd for events.
-	for _, hap := range d.haps {
-		d.logger.Printf("Connected to AP\n  SSID: %q\n  BSSID: %q\n  CHANNEL: %02d\n  STATE: %q\n",
-			hap.status.SSID,
-			hap.status.BSSID,
-			hap.status.Channel,
-			hap.status.State,
-		)
-
-		hap := hap
-		eg.Go(func() error {
-			return hap.client.Attach(ctx, func(event hostapd.Event) error {
-				d.logger.Printf("%s: Event %T: %q", hap.status.SSID, event, event.Raw())
-
-				switch e := event.(type) {
-
-				case hostapd.EventStationConnect:
-					var mac MAC
-					if err := mac.Decode(e.MAC); err != nil {
-						return err
-					}
-
-					var shouldUpdate bool
-					d.mu.Lock()
-					sta, ok := d.stations[mac]
-					if ok {
-						shouldUpdate = !sta.connected || sta.bssid != hap.status.BSSID
-						sta.bssid = hap.status.BSSID
-						sta.connected = true
-						sta.connectedAt = time.Now()
-						d.stations[mac] = sta
-					}
-					d.mu.Unlock()
-					if !ok {
-						// Station is not being tracked.
-						return nil
-					}
-
-					if d.db.cancel(mac) {
-						d.logger.Printf("cancelled disconnect event for %s", mac)
-					}
-
-					if !shouldUpdate {
-						break
-					}
-
-					pubCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-					defer cancel()
-					if err := d.hass.StationHome(pubCtx, mac.String()); err != nil {
-						return err
-					}
-
-					attrs := hass.Attrs{
-						Name:        sta.name,
-						MAC:         sta.mac.String(),
-						IsConnected: true,
-						APName:      d.apName,
-						SSID:        hap.status.SSID,
-						BSSID:       hap.status.BSSID,
-						ConnectedAt: &sta.connectedAt,
-						DisconnectedFor: func() int {
-							if sta.disconnectedAt.IsZero() {
-								return 0
-							}
-							return int(time.Since(sta.disconnectedAt).Seconds())
-						}(),
-					}
-
-					pubCtx, cancel = context.WithTimeout(ctx, 2*time.Second)
-					defer cancel()
-					if err := d.hass.StationAttributes(pubCtx, mac.String(), attrs); err != nil {
-						return err
-					}
-
-				case hostapd.EventStationDisconnect:
-					var mac MAC
-					if err := mac.Decode(e.MAC); err != nil {
-						return err
-					}
-
-					d.mu.Lock()
-					sta, ok := d.stations[mac]
-					if ok {
-						if sta.connected && sta.bssid != hap.status.BSSID {
-							// Assume that station previously connected to another AP, and
-							// that this is a delayed disconnect event from the previous AP.
-							d.mu.Unlock()
-							d.logger.Printf("ignoring latent disconnect for %s; connected to other bssid %s", mac, sta.bssid)
-							return nil
-						}
-						sta.connected = false
-						sta.disconnectedAt = time.Now()
-						d.stations[mac] = sta
-					}
-					d.mu.Unlock()
-					if !ok {
-						// Station is not being tracked.
-						return nil
-					}
-
-					d.db.enqueue(mac, func() {
-						pubCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-						defer cancel()
-						if err := d.hass.StationNotHome(pubCtx, mac.String()); err != nil {
-							errs <- err
-							return
-						}
-
-						d.mu.Lock()
-						sta, ok := d.stations[mac]
-						d.mu.Unlock()
-
-						if !ok {
-							// Somehow station was removed.
-							return
-						}
-
-						attrs := hass.Attrs{
-							Name:           sta.name,
-							MAC:            sta.mac.String(),
-							IsConnected:    false,
-							APName:         d.apName,
-							SSID:           hap.status.SSID,
-							BSSID:          hap.status.BSSID,
-							ConnectedFor:   int(time.Since(sta.connectedAt).Seconds()),
-							DisconnectedAt: &sta.disconnectedAt,
-						}
-
-						pubCtx, cancel = context.WithTimeout(ctx, 2*time.Second)
-						defer cancel()
-						if err := d.hass.StationAttributes(pubCtx, mac.String(), attrs); err != nil {
-							errs <- err
-							return
-						}
-					})
-
-				default:
-					d.logger.Printf("%s: event not handled %T: %q", hap.status.SSID, event, event.Raw())
-				}
-
-				return nil
-			})
-		})
+		sta.name = devCfg.Name
+		sta.mac = mac
+		d.stations[mac] = sta
+	}
+	// Find previously configured stations that are no longer
+	// present in the new configuration.
+	for mac := range d.stations {
+		if _, ok := changes[mac]; !ok {
+			changes[mac] = staRemoved
+			delete(d.stations, mac)
+		}
 	}
 
-	return eg.Wait()
+	var logMsg strings.Builder
+	fmt.Fprintf(&logMsg, "Received config update (retained=%v):\n", retained)
+	defer func() {
+		d.logger.Print(logMsg.String())
+	}()
+
+	if len(changes) == 0 {
+		fmt.Fprintln(&logMsg, "(no stations configured)")
+		return nil
+	}
+
+	var connected map[MAC]connectedStation
+	if hasUpdates {
+		// Avoid calling Stations on each hostap client unless
+		// necessary.
+		var err error
+		if connected, err = d.connectedStations(); err != nil {
+			var unknown hostapd.ErrUnknownCmd
+			if errors.As(err, &unknown) {
+				// At this point, we can still continue. The 'connected' map will be empty, meaning
+				// all stations will be considered disconnected. This is better than failing completely.
+				d.logger.Print("Unable to retrieve list of connected stations. Marking all new stations (if any) as disconnected.\nSee https://github.com/awilliams/wifi-presence/#hostapd-full-version for more information")
+			} else {
+				return err
+			}
+		}
+	}
+
+	// Process each configuration change.
+	for mac, change := range changes {
+		sta := d.stations[mac] // May be zero value.
+
+		switch change {
+		case staNoChange:
+			// Nothing to do here.
+
+		case staUpdated:
+			if d.hassAutoDisc {
+				err := d.hass.RegisterDeviceTracker(ctx, hass.Discovery{
+					Name: sta.name,
+					MAC:  sta.mac.String(),
+				})
+				if err != nil {
+					return err
+				}
+			}
+
+		case staAdded:
+			if d.hassAutoDisc {
+				err := d.hass.RegisterDeviceTracker(ctx, hass.Discovery{
+					Name: sta.name,
+					MAC:  sta.mac.String(),
+				})
+				if err != nil {
+					return err
+				}
+			}
+
+			// Check whether this station is connected or not.
+			cs, ok := connected[mac]
+			if !ok {
+				sta.connected = false
+				d.stations[mac] = sta
+
+				// Station is not connected.
+				pubCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+				defer cancel()
+				if err := d.hass.StationNotHome(pubCtx, mac.String()); err != nil {
+					return err
+				}
+				break
+			}
+
+			// Station is connected.
+
+			sta.connected = true
+			sta.connectedAt = time.Now().Add(-cs.sta.Connected)
+			sta.bssid = cs.hapStatus.BSSID
+			d.stations[mac] = sta
+
+			d.db.cancel(mac)
+
+			attrs := hass.Attrs{
+				Name:         sta.name,
+				MAC:          sta.mac.String(),
+				IsConnected:  true,
+				APName:       d.apName,
+				SSID:         cs.hapStatus.SSID,
+				BSSID:        cs.hapStatus.BSSID,
+				ConnectedAt:  &sta.connectedAt,
+				ConnectedFor: int(time.Since(sta.connectedAt).Seconds()),
+			}
+
+			pubCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			defer cancel()
+			if err := d.hass.StationHome(pubCtx, mac.String()); err != nil {
+				return err
+			}
+
+			pubCtx, cancel = context.WithTimeout(ctx, 2*time.Second)
+			defer cancel()
+			if err := d.hass.StationAttributes(pubCtx, mac.String(), attrs); err != nil {
+				return err
+			}
+
+		case staRemoved:
+			d.db.cancel(mac)
+
+			// TODO: send disconnected state here?
+			// HomeAssistant removes the devices from its registry, but other systems may depend
+			// more on this state message.
+
+			if d.hassAutoDisc {
+				if err := d.hass.UnregisterDeviceTracker(ctx, mac.String()); err != nil {
+					return err
+				}
+			}
+		}
+
+		fmt.Fprintf(&logMsg, "  %q (%s): %s\n", sta.name, mac, change.String())
+	}
+
+	return nil
+}
+
+func (d *Daemon) onHostapdEvent(ctx context.Context, hap hap, event hostapd.Event, errs chan<- error) error {
+	d.logger.Printf("%s: Event %T: %q", hap.status.SSID, event, event.Raw())
+
+	switch e := event.(type) {
+
+	case hostapd.EventStationConnect:
+		var mac MAC
+		if err := mac.Decode(e.MAC); err != nil {
+			return err
+		}
+
+		var shouldUpdate bool
+		d.mu.Lock()
+		sta, ok := d.stations[mac]
+		if ok {
+			shouldUpdate = !sta.connected || sta.bssid != hap.status.BSSID
+			sta.bssid = hap.status.BSSID
+			sta.connected = true
+			sta.connectedAt = time.Now()
+			d.stations[mac] = sta
+		}
+		d.mu.Unlock()
+		if !ok {
+			// Station is not being tracked.
+			return nil
+		}
+
+		if d.db.cancel(mac) {
+			d.logger.Printf("cancelled disconnect event for %s", mac)
+		}
+
+		if !shouldUpdate {
+			break
+		}
+
+		pubCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		if err := d.hass.StationHome(pubCtx, mac.String()); err != nil {
+			return err
+		}
+
+		attrs := hass.Attrs{
+			Name:        sta.name,
+			MAC:         sta.mac.String(),
+			IsConnected: true,
+			APName:      d.apName,
+			SSID:        hap.status.SSID,
+			BSSID:       hap.status.BSSID,
+			ConnectedAt: &sta.connectedAt,
+			DisconnectedFor: func() int {
+				if sta.disconnectedAt.IsZero() {
+					return 0
+				}
+				return int(time.Since(sta.disconnectedAt).Seconds())
+			}(),
+		}
+
+		pubCtx, cancel = context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		if err := d.hass.StationAttributes(pubCtx, mac.String(), attrs); err != nil {
+			return err
+		}
+
+	case hostapd.EventStationDisconnect:
+		var mac MAC
+		if err := mac.Decode(e.MAC); err != nil {
+			return err
+		}
+
+		d.mu.Lock()
+		sta, ok := d.stations[mac]
+		if ok {
+			if sta.connected && sta.bssid != hap.status.BSSID {
+				// Assume that station previously connected to another AP, and
+				// that this is a delayed disconnect event from the previous AP.
+				d.mu.Unlock()
+				d.logger.Printf("ignoring latent disconnect for %s; connected to other bssid %s", mac, sta.bssid)
+				return nil
+			}
+			sta.connected = false
+			sta.disconnectedAt = time.Now()
+			d.stations[mac] = sta
+		}
+		d.mu.Unlock()
+		if !ok {
+			// Station is not being tracked.
+			return nil
+		}
+
+		d.db.enqueue(mac, func() {
+			pubCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			defer cancel()
+			if err := d.hass.StationNotHome(pubCtx, mac.String()); err != nil {
+				errs <- err
+				return
+			}
+
+			d.mu.Lock()
+			sta, ok := d.stations[mac]
+			d.mu.Unlock()
+
+			if !ok {
+				// Somehow station was removed.
+				return
+			}
+
+			attrs := hass.Attrs{
+				Name:           sta.name,
+				MAC:            sta.mac.String(),
+				IsConnected:    false,
+				APName:         d.apName,
+				SSID:           hap.status.SSID,
+				BSSID:          hap.status.BSSID,
+				ConnectedFor:   int(time.Since(sta.connectedAt).Seconds()),
+				DisconnectedAt: &sta.disconnectedAt,
+			}
+
+			pubCtx, cancel = context.WithTimeout(ctx, 2*time.Second)
+			defer cancel()
+			if err := d.hass.StationAttributes(pubCtx, mac.String(), attrs); err != nil {
+				errs <- err
+				return
+			}
+		})
+
+	default:
+		d.logger.Printf("%s: event not handled %T: %q", hap.status.SSID, event, event.Raw())
+	}
+
+	return nil
 }
 
 // connectedStations returns a mapping by MAC address of all connected
