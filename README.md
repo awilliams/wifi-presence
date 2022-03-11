@@ -9,22 +9,19 @@ Monitors WiFi client connect and disconnect events and publishes them to an MQTT
 * **Why**: Presence detection for home automation systems.
 * **How**: `wifi-presence` connects to [`hostapd`'s control interface](http://w1.fi/wpa_supplicant/devel/hostapd_ctrl_iface_page.html) to receive client connect and disconnect events.
 
-This program was designed for OpenWrt APs, but should work on any system meeting the following requirements:
- * Running [hostapd](http://w1.fi/hostapd/)
- * Linux operating system on supported architecture
-
-[OpenWrt](https://openwrt.org) Requirements:
- * [Hostapd](https://openwrt.org/packages/pkgdata/hostapd) package installed
- * For improved capabilities, use the "full" version of [hostapd](https://openwrt.org/packages/pkgdata/hostapd).
-   See [hostapd full version](#hostapd-full-version) for more information.
+Requirements:
+ * Supported system running [hostapd](http://w1.fi/hostapd/) (such as an OpenWrt AP)
+ * MQTT broker
 
 **Contents**:
  * [Motivation](#motivation)
- * [Configuration](#configuration)
  * [Home Assistant](#home-assistant)
- * [Usage](#usage)
-   * [hostapd](#hostapd)
-   * [MQTT](#mqtt)
+ * [Configuration](#configuration)
+   * [JSON via MQTT](#json-via-mqtt)
+   * [Flags](#flags)
+ * [MQTT](#mqtt)
+ * [hostapd](#hostapd)
+   * [hostapd full version](#hostapd-full-version)
  * [OpenWrt](#openwrt)
  * [iOS](#ios) (randomized MAC addresses)
 
@@ -43,6 +40,14 @@ There are similar projects that periodically ping client devices.
 This method may be less reliable than using `hostapd` because phones may not respond to pings while in low power mode.
 There is also a delay introduced by the ping frequency.
 
+## Home Assistant
+
+wifi-presence integrates with Home Assistant using the [MQTT](https://www.home-assistant.io/integrations/device_tracker.mqtt/) integration.
+This can be enabled/disabled via the `-hass.autodiscovery` flag (true by default).
+
+Although supported, Home Assistant isn't required.
+The messages published to MQTT can be consumed by any subscriber(s).
+
 ## Configuration
 
 Configuration is done via command-line flags at startup, and via MQTT at runtime.
@@ -51,8 +56,11 @@ The MQTT configuration determines the WiFi devices/clients wifi-presence will mo
 For each configured device, wifi-presence will publish state information on connect and disconnect.
 See the note about [iOS](#iOS) devices and MAC addresses.
 
-Configuration is a JSON published to the config topic (`<mqtt.prefix>/config`):
+### JSON via MQTT
 
+Configuration is a JSON published to the config topic (`<mqtt.prefix>/config`).
+
+Example configuration:
 ```json
 {
   "devices": [
@@ -72,16 +80,16 @@ Configuration is a JSON published to the config topic (`<mqtt.prefix>/config`):
 }
 ```
 
-Example configuration
+Example using [Mosquitto](https://mosquitto.org) to the JSON configuration in `wifi-presence.config.json`:
+```shell
+$ mosquitto_pub \
+        -h 'my-mqtt-broker' \
+        -t 'wifi-presence/config' \
+        -r \
+        -f wifi-presence.config.json
+```
 
-## Home Assistant
-
-wifi-presence integrates with Home Assistant using the [MQTT](https://www.home-assistant.io/integrations/device_tracker.mqtt/) integration.
-This can be enabled/disabled via the `-hass.autodiscovery` flag (true by default).
-
-Home Assistant isn't required; any system can subscribe to the topics that wifi-presense publishes to and go from there.
-
-## Usage
+### Flags
 
 ```
 wifi-presence [options]
@@ -118,7 +126,32 @@ Options:
     	Print version and exit
 ```
 
-### hostapd
+## MQTT
+
+wifi-presence publishes and subscribes to an MQTT broker.
+The -mqtt.prefix flag can be used to change the topic prefix,
+along with -hass.prefix for Home Assistant's topic prefix.
+
+The following topics are used:
+
+  * `<PREFIX>/<AP_NAME>/status`
+  The status of wifi-presence (online / offline).
+
+  * `<PREFIX>/config`
+  wifi-presence subscribes to this topic for configuration updates.
+
+  * `<HASS_PREFIX>/device_tracker/<AP_NAME>/<MAC>/config`
+  If -hass.autodiscovery is enabled, then all configured devices will be published
+  to these topics (based on their MAC address). Home Assistant subscribes to these
+  topics and registers/unregisters entities accordingly based on messages received.
+
+  * `<PREFIX>/station/<AP_NAME>/<MAC>/state`
+  The state of a device (home / not_home) is published to these topics.
+
+  * `<PREFIX>/station/<AP_NAME>/<MAC>/attrs`
+  A JSON object with device attributes (SSID, BSSID, etc) is published to these topics.
+
+## hostapd
 
 wifi-presence requires hostapd running with control interface(s) enabled.
 This is the default for OpenWrt.
@@ -145,31 +178,6 @@ The full version is included as part of various packages. For example, commands 
 opkg remove wpad-basic-wolfssl
 opkg install wpad-wolfssl
 ```
-
-### MQTT
-
-wifi-presence publishes and subscribes to an MQTT broker.
-The -mqtt.prefix flag can be used to change the topic prefix,
-along with -hass.prefix for Home Assistant's topic prefix.
-
-The following topics are used:
-
-  * `<PREFIX>/<AP_NAME>/status`
-  The status of wifi-presence (online / offline).
-
-  * `<PREFIX>/config`
-  wifi-presence subscribes to this topic for configuration updates.
-
-  * `<HASS_PREFIX>/device_tracker/<AP_NAME>/<MAC>/config`
-  If -hass.autodiscovery is enabled, then all configured devices will be published
-  to these topics (based on their MAC address). Home Assistant subscribes to these
-  topics and registers/unregisters entities accordingly based on messages received.
-
-  * `<PREFIX>/station/<AP_NAME>/<MAC>/state`
-  The state of a device (home / not_home) is published to these topics.
-
-  * `<PREFIX>/station/<AP_NAME>/<MAC>/attrs`
-  A JSON object with device attributes (SSID, BSSID, etc) is published to these topics.
 
 ## OpenWrt
 
