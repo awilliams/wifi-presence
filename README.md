@@ -1,17 +1,11 @@
-# wifi-presence ![CI](https://github.com/awilliams/wifi-presence/workflows/CI/badge.svg?branch=main) [![Go Reference](https://pkg.go.dev/badge/github.com/awilliams/wifi-presence.svg)](https://pkg.go.dev/github.com/awilliams/wifi-presence)
+# wifi-presence
 
-Presence detection based on WiFi connections to APs (access points).
-Client connect and disconnect events are published to MQTT.
+OpenWrt package feed and build system for wifi-presence.
 
-* **What**: Standalone application designed to run on WiFi routers. Monitors WiFi client connect and disconnect events and publishes them to an MQTT broker.
-* **Why**: Presence detection for home automation systems.
-* **How**: `wifi-presence` connects to [`hostapd`'s control interface](http://w1.fi/wpa_supplicant/devel/hostapd_ctrl_iface_page.html) to receive client connect and disconnect events.
+This is a special branch for use of `wifi-presence` with OpenWrt.
+See the [`main`](https://github.com/awilliams/wifi-presence/tree/main) branch for the primary source code and documentation.
 
-## OpenWRT
-
-This branch provides a package feed for OpenWRT.
-
-### Usage
+### Usage with OpenWrt [build system](https://openwrt.org/docs/guide-developer/toolchain/use-buildsystem)
 
 ```
 # Add wifi-presence repository as a feed source.
@@ -22,3 +16,18 @@ echo "src-git awilliams https://github.com/awilliams/wifi-presence;openwrt" >> f
 ./scripts/feeds update awilliams
 ./scripts/feeds install wifi-presence
 ```
+
+## Package Generation
+
+Build `wifi-presence` OpenWrt packages (`.ipk`) for all supported architectures.
+
+Requirements:
+* Docker
+
+Usage:
+
+```shell
+make packages
+```
+
+The resulting packages will be copied to the `./out` directory.
