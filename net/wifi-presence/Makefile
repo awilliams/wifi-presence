@@ -9,7 +9,7 @@ PKG_LICENSE:=MIT
 
 PKG_SOURCE:=wifi-presence-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/awilliams/wifi-presence/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=a12644cab7e9ba9b34eeff45f3e42a1cdb922ed6d9d7cb139e448006c7a448dd
+PKG_HASH:=6879eb51271343724b26bdfd5f9677d02bdf544ae6702ce67d1119067fe7a053
 PKG_BUILD_DIR:=$(BUILD_DIR)/wifi-presence-$(PKG_VERSION)
 
 PKG_BUILD_DEPENDS:=golang/host
