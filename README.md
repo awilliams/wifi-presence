@@ -1,12 +1,10 @@
 # wifi-presence ![CI](https://github.com/awilliams/wifi-presence/workflows/CI/badge.svg?branch=main) [![Go Reference](https://pkg.go.dev/badge/github.com/awilliams/wifi-presence.svg)](https://pkg.go.dev/github.com/awilliams/wifi-presence)
 
-Presence detection based on connection to a WiFi Access Point.
-Runs on OpenWRT access points and requires no special setup for WiFi clients.
-Client connect and disconnect events are published to MQTT.
+Presence detection using connect/disconnect events from a WiFi Access Point published to MQTT.
 
-* **What**: Standalone application designed to run on WiFi routers.
-Monitors WiFi client connect and disconnect events and publishes them to an MQTT broker.
-* **Why**: Presence detection for home automation systems.
+* **What**: Standalone application that runs on OpenWrt access points.
+Publishes WiFi client connect and disconnect events to an MQTT broker.
+* **Why**: Presence detection for home automation systems. Integrates with Home Assistant using the [MQTT](https://www.home-assistant.io/integrations/device_tracker.mqtt/) integration.
 * **How**: `wifi-presence` connects to [`hostapd`'s control interface](http://w1.fi/wpa_supplicant/devel/hostapd_ctrl_iface_page.html) to receive client connect and disconnect events.
 
 Requirements:
@@ -14,18 +12,29 @@ Requirements:
  * MQTT broker
 
 **Contents**:
+ * [Quickstart](#quickstart)
  * [Motivation](#motivation)
  * [Home Assistant](#home-assistant)
  * [Configuration](#configuration)
    * [JSON via MQTT](#json-via-mqtt)
-   * [Flags](#flags)
+ * [OpenWrt](#openwrt)
+   * [opkg](#opkg)
+   * [Download](#download)
+ * [Flags](#flags)
  * [MQTT](#mqtt)
  * [hostapd](#hostapd)
    * [hostapd full version](#hostapd-full-version)
- * [OpenWrt](#openwrt)
  * [iOS](#ios) (randomized MAC addresses)
 
 ![wifi-presence diagram](./docs/diagram.png "Diagram of wifi-presence")
+
+## Quickstart
+
+1. Install `wifi-presence` on an OpenWrt access point. See [okpg](#opkg) or [download](#download).
+2. Update the `/etc/config/wifi-presence` configuration file. Update the `mqttAddr` to the desired MQTT broker's address.
+3. Publish to the `wifi-presence/config` topic a list of MAC addresses to track. See [configuration](#configuration).
+
+If using Home Assistant with the same MQTT broker, it should automatically be updated with each configured WiFi client.
 
 ## Motivation
 
@@ -89,8 +98,51 @@ $ mosquitto_pub \
         -f wifi-presence.config.json
 ```
 
-### Flags
+## OpenWrt
 
+The [OpenWrt](https://openwrt.org/about) project is
+> OpenWrt is a highly extensible GNU/Linux distribution for embedded devices (typically wireless routers).
+
+See the [openwrt](https://github.com/awilliams/wifi-presence/tree/openwrt) branch for package and build scripts.
+
+### opkg
+
+Installation via OpenWrt's `opkg` package manager:
+
+```shell
+# Add public key
+wget https://wifi-presence.s3.us-east-2.amazonaws.com/public.key
+opkg-key add public.key
+
+# Add package source as a custom feed
+echo "src/gz wifi-presence http://wifi-presence.s3-website.us-east-2.amazonaws.com" >> /etc/opkg/customfeeds.conf
+
+# Fetch/update list of packages
+opkg update
+
+# Install/upgrade wifi-presence
+opkg install wifi-presence
+
+# Update configuration
+vim /etc/config/wifi-presence
+
+# Enable and start wifi-presence
+/etc/init.d/wifi-presence enable
+```
+
+### Configuration
+
+The configuration file is: `/etc/config/wifi-presence`.
+
+### Download
+
+OpenWrt packages of `wifi-presence` are available for [download](https://github.com/awilliams/wifi-presence/releases/latest).
+
+## Flags
+
+When running `wifi-presence` using OpenWrt, use the provided `/etc/config/wifi-presence` file to configure.
+
+As a standalone program, the following command-line flags are used:
 ```
 wifi-presence [options]
 
@@ -178,14 +230,6 @@ The full version is included as part of various packages. For example, commands 
 opkg remove wpad-basic-wolfssl
 opkg install wpad-wolfssl
 ```
-
-## OpenWrt
-
-The [OpenWrt](https://openwrt.org/about) project is
-> OpenWrt is a highly extensible GNU/Linux distribution for embedded devices (typically wireless routers).
-There are OpenWrt compatible packages of `wifi-presence` available for download.
-
-See the [openwrt](https://github.com/awilliams/wifi-presence/tree/openwrt) branch for more information.
 
 ## iOS
 
