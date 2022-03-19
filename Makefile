@@ -1,6 +1,7 @@
 OPENWRT_VERSION=21.02.2
 IMG_TAG:=wifi-presence/openwrt:${OPENWRT_VERSION}
 
+# Create wifi-presence ipk for all supported architectures.
 .PHONY: packages
 packages: openwrt-${OPENWRT_VERSION}
 	mkdir -p out

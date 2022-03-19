@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Create wifi-presence OpenWrt packages (.ipk) for
+# all supported architectures.
+#
+# This script is written to be run within the OpenWrt SDK Docker container.
+# See Makefile for more information.
+
 set -e
 
 if [ ! -f feeds.conf ] || grep -q -v "wifi-presence" feeds.conf; then
