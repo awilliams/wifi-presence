@@ -6,7 +6,7 @@ ARG GO_BOOTSTRAP_VERSION=1.17.3
 
 RUN apt-get update && \
   apt-get install -y \
-    sudo time git-core subversion build-essential g++ bash make \
+    sudo time git-core subversion build-essential g++ bash cmake make \
     libssl-dev patch libncurses5 libncurses5-dev zlib1g-dev gawk \
     flex gettext wget unzip xz-utils python python-distutils-extra \
     python3 python3-distutils-extra rsync curl libsnmp-dev liblzma-dev \
@@ -46,4 +46,7 @@ WORKDIR /openwrt
 
 # Compile tools and toolchain to save time on repeated builds.
 RUN \
-  make -j $(nproc) defconfig download tools/install
+  make -j $(nproc) defconfig download tools/install && \
+  sudo cc -O2 -Itools/include -o /usr/local/bin/mkhash scripts/mkhash.c && \
+  git clone https://git.openwrt.org/project/usign.git /tmp/usign && \
+  cd /tmp/usign && cmake . && make && sudo mv usign /usr/local/bin/usign && rm -rf /tmp/usign

@@ -17,3 +17,4 @@
 build/bin/*
 cmd/wifi-presence/wifi-presence
 out/
+keys/*.key

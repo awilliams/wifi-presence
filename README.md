@@ -5,6 +5,17 @@ OpenWrt package feed and build system for wifi-presence.
 This is a special branch for use of `wifi-presence` with OpenWrt.
 See the [`main`](https://github.com/awilliams/wifi-presence/tree/main) branch for the primary source code and documentation.
 
+### Usage with opkg
+
+```shell
+# Add public key
+wget https://wifi-presence.s3.us-east-2.amazonaws.com/public.key
+opkg-key add public.key
+
+# Add package source as a custom feed
+echo "src/gz wifi-presence http://wifi-presence.s3-website.us-east-2.amazonaws.com" >> /etc/opkg/customfeeds.conf
+```
+
 ### Usage with OpenWrt [build system](https://openwrt.org/docs/guide-developer/toolchain/use-buildsystem)
 
 ```

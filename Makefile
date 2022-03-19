@@ -7,6 +7,7 @@ packages: openwrt-${OPENWRT_VERSION}
 	mkdir -p out
 	docker run \
 		--rm \
+		--volume $(shell pwd)/keys:/keys:ro \
 		--volume $(shell pwd)/package.bash:/package.bash:ro \
 		--volume $(shell pwd)/out:/OUT \
 		${IMG_TAG} \
@@ -19,6 +20,7 @@ shell: openwrt-${OPENWRT_VERSION}
 	docker run \
 		--rm \
 		-it \
+		--volume $(shell pwd)/keys:/keys:ro \
 		--volume $(shell pwd)/package.bash:/package.bash:ro \
 		--volume $(shell pwd)/out:/OUT \
 		${IMG_TAG}

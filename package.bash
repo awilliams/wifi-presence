@@ -77,3 +77,21 @@ for arch in "${archs[@]}"; do
   # Copy package to output directory.
   find "bin/packages/${arch}" -iname "${pkgName}" -type f -exec cp "{}" /OUT/. \;
 done
+
+# Create artifacts needed to serve packages over HTTP(s).
+
+(
+  # Run relative to /OUT director so that the 'Filename' attributes
+  # are correct.
+  cd /OUT
+  /openwrt/scripts/ipkg-make-index.sh . | sed -r '/^Source(Name)?:/d' > Packages
+)
+gzip -fk /OUT/Packages
+
+# Optionally sign 'Packages'.
+if [ -f /keys/private.key ]; then
+  usign -S -m /OUT/Packages -s /keys/private.key -x /OUT/Packages.sig
+  if [ -f /keys/public.key ]; then
+    cp /keys/public.key /OUT/.
+  fi
+fi
