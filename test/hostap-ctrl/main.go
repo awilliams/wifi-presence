@@ -21,6 +21,7 @@ func main() {
 	macAddr := flag.String("mac", "BE:EF:00:00:FA:CE", "Device MAC address")
 	ssid := flag.String("ssid", "Test AP", "Mock SSID")
 	bssid := flag.String("bssid", "54:65:73:74:41:50", "Mock BSSID")
+	hostapdFull := flag.Bool("full", true, "Emulate 'full' version of hostapd, with support for station listing")
 	connected := flag.Bool("connected", false, "If true, then station is initially connected")
 
 	flag.Parse()
@@ -66,6 +67,11 @@ func main() {
 		close(attached)
 		return events
 	})
+	if !*hostapdFull {
+		handler.OnStationFirst(func() (resp hostapdtest.StationResp, unknown, ok bool) {
+			return resp, true, false
+		})
+	}
 
 	go func() {
 		if err := hap.Serve(handler); err != nil {
