@@ -33,10 +33,12 @@ func (m *MAC) Decode(s string) error {
 	return nil
 }
 
+// MarshalJSON returns the JSON representation of m.
 func (m MAC) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + m.String() + `"`), nil
 }
 
+// UnmarshalJSON decodes the JSON representation of a mac into m.
 func (m *MAC) UnmarshalJSON(b []byte) error {
 	var decoded MAC
 	if len(b) < 2 {

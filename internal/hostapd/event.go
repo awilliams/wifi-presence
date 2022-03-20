@@ -72,7 +72,7 @@ type EventStationConnect struct {
 	MAC string
 }
 
-// Raw returns event as given by hostapd. Satisifes
+// Raw returns event as given by hostapd. Satisfies
 // the Event interface.
 func (e EventStationConnect) Raw() string {
 	return e.raw
@@ -85,7 +85,7 @@ type EventStationDisconnect struct {
 	MAC string
 }
 
-// Raw returns event as given by hostapd. Satisifes
+// Raw returns event as given by hostapd. Satisfies
 // the Event interface.
 func (e EventStationDisconnect) Raw() string {
 	return e.raw
@@ -96,7 +96,7 @@ func (e EventStationDisconnect) Raw() string {
 // and hostapd is restarted.
 type EventTerminating string
 
-// Raw returns event as given by hostapd. Satisifes
+// Raw returns event as given by hostapd. Satisfies
 // the Event interface.
 func (e EventTerminating) Raw() string {
 	return string(e)
@@ -106,7 +106,7 @@ func (e EventTerminating) Raw() string {
 // events. Its Raw method returns the contents of the message.
 type EventUnrecognized string
 
-// Raw returns event as given by hostapd. Satisifes
+// Raw returns event as given by hostapd. Satisfies
 // the Event interface.
 func (e EventUnrecognized) Raw() string {
 	return string(e)

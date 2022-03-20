@@ -13,11 +13,16 @@ import (
 )
 
 const (
-	StatusOnline   = "online"
-	StatusOffline  = "offline"
-	PayloadHome    = "connected"
+	// StatusOnline is the MQTT message when wifi-presence is online.
+	StatusOnline = "online"
+	// StatusOffline is the MQTT message when wifi-presence is offline.
+	StatusOffline = "offline"
+	// PayloadHome is the MQTT message when WiFi client connects.
+	PayloadHome = "connected"
+	// PayloadNotHome is the MQTT message when WiFi client disconnects.
 	PayloadNotHome = "not_connected"
-	SourceRouter   = "router"
+	// SourceRouter is 'source' of the device tracker.
+	SourceRouter = "router"
 
 	icon = "mdi:wifi-marker" // https://materialdesignicons.com/icon/wifi-marker
 )
@@ -40,6 +45,7 @@ type MQTTOpts struct {
 	DiscoveryPrefix string // Optional
 }
 
+// NewMQTT returns an MQTT instance using the given options.
 func NewMQTT(ctx context.Context, opts MQTTOpts) (*MQTT, error) {
 	if opts.APName == "" {
 		return nil, errors.New("APName cannot be blank")
@@ -104,6 +110,7 @@ func NewMQTT(ctx context.Context, opts MQTTOpts) (*MQTT, error) {
 	}, nil
 }
 
+// MQTT manager.
 type MQTT struct {
 	c            mqtt.Client
 	connLostErrs <-chan error
@@ -112,6 +119,8 @@ type MQTT struct {
 	apName string
 }
 
+// OnConnectionLost blocks until either the context is cancelled or
+// when the MQTT connection is lost, in which case an error is returned.
 func (m *MQTT) OnConnectionLost(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
@@ -132,7 +141,7 @@ func (m *MQTT) StatusOnline(ctx context.Context) error {
 	return m.publishStatus(ctx, StatusOnline)
 }
 
-// StatusOnline publishes that wifi-presence is offline using
+// StatusOffline publishes that wifi-presence is offline using
 // the same topic as the will.
 func (m *MQTT) StatusOffline(ctx context.Context) error {
 	return m.publishStatus(ctx, StatusOffline)
@@ -197,7 +206,7 @@ func (m *MQTT) RegisterDeviceTracker(ctx context.Context, dsc Discovery) error {
 	return tokenWait(ctx, tkn, "publish station discovery")
 }
 
-// RegisterDeviceTracker publishes a message for Home Assistant to stop tracking
+// UnregisterDeviceTracker publishes a message for Home Assistant to stop tracking
 // the defined device.
 func (m *MQTT) UnregisterDeviceTracker(ctx context.Context, mac string) error {
 	if mac == "" {
@@ -213,7 +222,7 @@ func (m *MQTT) StationHome(ctx context.Context, mac string) error {
 	return m.publishStationState(ctx, mac, PayloadHome)
 }
 
-// StationHome publishes the device's state as 'not_home'.
+// StationNotHome publishes the device's state as 'not_home'.
 func (m *MQTT) StationNotHome(ctx context.Context, mac string) error {
 	return m.publishStationState(ctx, mac, PayloadNotHome)
 }
@@ -223,7 +232,7 @@ func (m *MQTT) publishStationState(ctx context.Context, mac, state string) error
 	return tokenWait(ctx, tkn, "publish station state")
 }
 
-// StationHome publishes the device's attributes.
+// StationAttributes publishes the device's attributes.
 func (m *MQTT) StationAttributes(ctx context.Context, mac string, attrs Attrs) error {
 	payload, err := json.Marshal(attrs)
 	if err != nil {

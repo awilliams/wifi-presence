@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-// NewHostADP creates a mock HostAPD listening on a temporary socket.
+// NewHostAPD creates a mock HostAPD listening on a temporary socket.
 func NewHostAPD(sockPath string) (*HostAPD, error) {
 	sockAddr, err := net.ResolveUnixAddr("unixgram", sockPath)
 	if err != nil {

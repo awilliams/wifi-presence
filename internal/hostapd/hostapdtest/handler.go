@@ -63,7 +63,7 @@ func (h *Handler) handleMessage(msg string) {
 	h.onMessage(msg)
 }
 
-// OnMessage registers a callback that will be called
+// OnUndef registers a callback that will be called
 // with every otherwise unhandled message received after calling Serve.
 func (h *Handler) OnUndef(f func(msg string) string) {
 	h.Lock()
@@ -80,7 +80,7 @@ func (h *Handler) handleUndef(msg string) (string, bool) {
 	return "", false
 }
 
-// OnMessage registers a callback that will be called
+// OnPing registers a callback that will be called
 // with every ping message. If false is returned, then
 // no PONG reply is sent. If this callback isn't set, then
 // PONG will be sent.

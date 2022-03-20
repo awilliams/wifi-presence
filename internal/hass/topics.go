@@ -35,7 +35,7 @@ func (m *MQTTTopics) DeviceDiscovery(mac string) string {
 	return mkTopic(m.HASSPrefix, "device_tracker", sanitizeTopic(m.Name), sanitizeMACTopic(mac), "config")
 }
 
-// DeviceJSONAttrs topic for device's state.
+// DeviceState topic for device's state.
 func (m *MQTTTopics) DeviceState(mac string) string {
 	return mkTopic(m.Prefix, "station", sanitizeTopic(m.Name), sanitizeMACTopic(mac), "state")
 }

@@ -85,7 +85,7 @@ func TestMQTTSubscribeConfig_CallbackErr(t *testing.T) {
 	var (
 		publishErr   = make(chan error, 1)
 		subscribeErr = make(chan error, 1)
-		expectedErr  = errors.New("oh no!")
+		expectedErr  = errors.New("oh no")
 		c            = mqttClient(t)
 		ctx, cancel  = context.WithCancel(context.Background())
 	)
