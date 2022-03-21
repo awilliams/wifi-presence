@@ -6,8 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v0.1.1] - 2022-03-11
+## [v0.1.2] - 2022-03-21
 ### Changed
+- Improved README
+- Update the `hostapd-ctrl` program to emulate a 'mini' version of hostapd
+- Address go lint and spelling issues
+
+## [v0.1.1] - 2022-03-11
+### Added
 - Adds support for hostapd-mini (non-full version). When using this version of hostapd, wifi-presence will consider all devices as disconnected at startup.
 
 ### Changed
@@ -32,7 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v0.0.1] - 2021-02-15
 Initial beta release
 
-[Unreleased]: https://github.com/awilliams/wifi-presence/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/awilliams/wifi-presence/compare/v0.1.2...HEAD
+[v0.1.2]: https://github.com/awilliams/wifi-presence/compare/v0.1.1...v0.1.2
 [v0.1.1]: https://github.com/awilliams/wifi-presence/compare/v0.1.0...v0.1.1
 [v0.1.0]: https://github.com/awilliams/wifi-presence/compare/v0.0.2...v0.1.0
 [v0.0.2]: https://github.com/awilliams/wifi-presence/compare/v0.0.1...v0.0.2
