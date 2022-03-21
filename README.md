@@ -1,6 +1,6 @@
 # wifi-presence ![CI](https://github.com/awilliams/wifi-presence/workflows/CI/badge.svg?branch=main) [![Go Reference](https://pkg.go.dev/badge/github.com/awilliams/wifi-presence.svg)](https://pkg.go.dev/github.com/awilliams/wifi-presence)
 
-Presence detection using connect/disconnect events from a WiFi Access Point published to MQTT.
+Presence detection on OpenWrt routers using connect/disconnect events of WiFi clients. Events are published to MQTT with Home Assistant integration.
 
 * **What**: Standalone application that runs on OpenWrt access points.
 Publishes WiFi client connect and disconnect events to an MQTT broker.
@@ -25,6 +25,7 @@ Requirements:
  * [hostapd](#hostapd)
    * [hostapd full version](#hostapd-full-version)
  * [iOS](#ios) (randomized MAC addresses)
+ * [OpenWrt Luci Integration](#openwrt-luci-integration)
 
 ![wifi-presence diagram](./docs/diagram.png "Diagram of wifi-presence")
 
@@ -236,3 +237,18 @@ opkg install wpad-wolfssl
 iOS version 14 introduced ["private Wi-Fi addresses"](https://support.apple.com/en-us/HT211227) to improve privacy.
 When enabled, an iOS client will connect to APs using different MAC addresses. Consider disabling this feature for APs that
 you control and are running `wifi-presence` to help make presence detection configuration easier.
+
+## OpenWrt Luci Integration
+
+The [OpenWrt Luci](https://www.home-assistant.io/integrations/luci/) integration similar presence detection functionality.
+
+Some differences between `wifi-presence` and the `luci` integration:
+ * The `luci` integration communicates with the OpenWrt router using the OpenWrt admin HTTP(S) interface, while `wifi-presence` uses MQTT.
+ The MQTT HomeAssistant integration is then what bridges the two.
+ There's not necessarily an advantage to either approach, although if you don't have MQTT already integrated, then `wifi-presence` may not make as much sense.
+
+ * Presence Detection:
+   * The `luci` integration uses polling, i.e. it periodically queries the OpenWrt interface for the list of connected clients, while `wifi-presence` is event-driven.
+   It connects with OpenWrt's hostapd (the system responsible for WiFi) and receives connect/disconnect events in real-time.
+   * The `luci` integration effectively scrapes the [ARP and DHCP tables](https://github.com/fbradyirl/openwrt-luci-rpc/blob/9eb3a2bea5ddad93877dbe3bf4f6d189391a9fa7/openwrt_luci_rpc/openwrt_luci_rpc.py#L161-L162) on the OpenWrt router to get a list of connected clients.
+   While `wifi-presence` is integrated directly with hostapd and has direct access to the connected clients.
