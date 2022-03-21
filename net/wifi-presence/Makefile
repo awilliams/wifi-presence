@@ -6,6 +6,7 @@ PKG_NAME:=wifi-presence
 PKG_VERSION:=0.1.1
 PKG_RELEASE?=1
 PKG_LICENSE:=MIT
+PKG_MAINTAINER:=Adam Williams <pwnfactory@gmail.com>
 
 PKG_SOURCE:=wifi-presence-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/awilliams/wifi-presence/tar.gz/v$(PKG_VERSION)?
