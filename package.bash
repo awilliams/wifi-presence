@@ -57,8 +57,8 @@ for arch in "${archs[@]}"; do
     continue
   fi
 
-  echo "## Building for:\t${arch}"
-  echo "## Using target:\t${target_parts[0]}/${target_parts[1]}"
+  echo "## Building for:   ${arch}"
+  echo "## Using target:   ${target_parts[0]}/${target_parts[1]}"
 
   make clean
   make toolchain/clean
