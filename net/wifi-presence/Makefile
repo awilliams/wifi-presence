@@ -1,17 +1,15 @@
-# https://openwrt.org/docs/guide-developer/packages
-
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=wifi-presence
 PKG_VERSION:=0.1.2
-PKG_RELEASE?=1
-PKG_LICENSE:=MIT
-PKG_MAINTAINER:=Adam Williams <pwnfactory@gmail.com>
+PKG_RELEASE:=1
 
-PKG_SOURCE:=wifi-presence-$(PKG_VERSION).tar.gz
+PKG_SOURCE:=-$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/awilliams/wifi-presence/tar.gz/v$(PKG_VERSION)?
 PKG_HASH:=f5cf8bf36e3c17ad4b0486007532030760c22c5f63bd63707d911ab94bd744df
-PKG_BUILD_DIR:=$(BUILD_DIR)/wifi-presence-$(PKG_VERSION)
+
+PKG_LICENSE:=MIT
+PKG_MAINTAINER:=Adam Williams <pwnfactory@gmail.com>
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
@@ -29,13 +27,11 @@ define Package/wifi-presence
   TITLE:=WiFi presence detection
   URL:=https://github.com/awilliams/wifi-presence
   DEPENDS:=$(GO_ARCH_DEPENDS)
-  MENU:=1
 endef
 
-# Package description; a more verbose description on what our package does
 define Package/wifi-presence/description
-WiFi presence detection.
-Publish WiFi client connect and disconnect events to MQTT.
+  WiFi presence detection.
+  Publish WiFi client connect and disconnect events to MQTT.
 endef
 
 define Package/wifi-presence/conffiles
@@ -50,8 +46,6 @@ file: /etc/config/wifi-presence.
 EOF
 endef
 
-# Package install instructions; create a directory inside the package to hold our executable,
-# and then copy the executable we built previously into the folder
 define Package/wifi-presence/install
 	$(call GoPackage/Package/Install/Bin,$(PKG_INSTALL_DIR))
 

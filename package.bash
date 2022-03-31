@@ -11,8 +11,19 @@ set -e
 if [ ! -f feeds.conf ] || grep -q -v "wifi-presence" feeds.conf; then
   # Add wifi-presence repository as a feed source.
   echo "src-git awilliams https://github.com/awilliams/wifi-presence;openwrt" >> feeds.conf
-  # Update and install this package.
+
+  # Checkout the above git repo.
   ./scripts/feeds update awilliams
+
+  # Fix a relative reference to the 'golang-package.mk' file in the wifi-presence Makefile.
+  # This was cargo culted from other Go projects in OpenWrt. Maybe the updated way is better and
+  # should be used in the source Makefile?
+  sed \
+    -i \
+    's#include \.\./\.\./lang/golang/golang-package\.mk#include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk#' \
+    feeds/awilliams/net/wifi-presence/Makefile
+
+  # Download the wifi-presence source tarball.
   ./scripts/feeds install wifi-presence
 fi
 
