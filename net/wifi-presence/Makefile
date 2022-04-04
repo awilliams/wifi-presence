@@ -24,26 +24,18 @@ include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
 define Package/wifi-presence
   SECTION:=net
   CATEGORY:=Network
-  TITLE:=WiFi presence detection
+  TITLE:=WiFi presence detection with Home Assistant integration
   URL:=https://github.com/awilliams/wifi-presence
   DEPENDS:=$(GO_ARCH_DEPENDS)
 endef
 
 define Package/wifi-presence/description
-  WiFi presence detection.
+  WiFi presence detection with Home Assistant integration.
   Publish WiFi client connect and disconnect events to MQTT.
 endef
 
 define Package/wifi-presence/conffiles
 /etc/config/wifi-presence
-endef
-
-define Package/wifi-presence/postinst
-#!/bin/sh
-cat <<EOF
-Please configure wifi-presence by editing the configuration
-file: /etc/config/wifi-presence.
-EOF
 endef
 
 define Package/wifi-presence/install
