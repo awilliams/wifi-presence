@@ -61,6 +61,19 @@ start_service() {
         [ -n "${sockDir}" ] && procd_append_param command "-sockDir=${sockDir}"
         [ -n "${verbose}" ] && procd_append_param command "-verbose=${verbose}"
 
+        if [ -z "${runAsUser}" ] && [ -z "${runAsGroup}" ]; then
+          # If both runAsUser and runAsGroup are unspecified, then
+          # determine their values by looking at the owner of the hostapd sockets.
+          #
+          # It would be preferable to use 'stat' to determine the owner of the socket,
+          # but it may not be present on all systems, so instead we revert to parsing ls output.
+          local sockOwner=$(find /var/run/hostapd/ -type s -maxdepth 1 -exec ls -ld {} \; | head -n 1 | awk '{ print $3 }')
+          if [ -n "${sockOwner}" ]; then
+            runAsUser="${sockOwner}"
+            runAsGroup="${sockOwner}"
+          fi
+        fi
+
         [ -n "${runAsUser}" ] && procd_set_param user "${runAsUser}"
         [ -n "${runAsGroup}" ] && procd_set_param group "${runAsGroup}"
 
