@@ -1,4 +1,4 @@
-OPENWRT_VERSION=21.02.2
+OPENWRT_VERSION=22.03.0
 IMG_TAG:=wifi-presence/openwrt:${OPENWRT_VERSION}
 
 # Create wifi-presence ipk for all supported architectures.
