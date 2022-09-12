@@ -58,7 +58,7 @@ func (s *Status) parse(p []byte) error {
 			}
 
 		case "ssid[0]":
-			if s.SSID, err = decodeSSID(scanner.Bytes()); err != nil {
+			if s.SSID, err = decodeSSID([]byte(val)); err != nil {
 				return err
 			}
 		case "bssid[0]":
