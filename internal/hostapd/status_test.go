@@ -58,3 +58,81 @@ bssid[0]=aa:bb:cc:ee:12:34
 ssid[0]=\xf0\x9f\x8c\x9d
 num_sta[0]=5
 chan_util_avg=96`
+
+func TestDecodeSSID(t *testing.T) {
+	cases := []struct {
+		name  string
+		input []byte
+		want  string
+	}{
+		{
+			name:  "ascii",
+			input: []byte("hello world"),
+			want:  "hello world",
+		},
+		{
+			name:  "ascii",
+			input: []byte("123!@#$%^)"),
+			want:  "123!@#$%^)",
+		},
+		{
+			name:  "emoji",
+			input: []byte("\\xf0\\x9f\\x90\\xa4"),
+			want:  "🐤",
+		},
+		// https://github.com/awilliams/wifi-presence/issues/7
+		{
+			name:  "mixed",
+			input: []byte("\\xcf\\x89=2\\xcf\\x80f"),
+			want:  "ω=2πf",
+		},
+		{
+			name:  "quote",
+			input: []byte("q\\\""),
+			want:  "q\"",
+		},
+		{
+			name:  "esc",
+			input: []byte("esc\\\\"),
+			want:  "esc\\",
+		},
+		{
+			name:  "control",
+			input: []byte("control\\e"),
+			want:  "control\033",
+		},
+		{
+			name:  "newline",
+			input: []byte("new\\n"),
+			want:  "new\n",
+		},
+		{
+			name:  "carriage",
+			input: []byte("car\\r"),
+			want:  "car\r",
+		},
+		{
+			name:  "tab",
+			input: []byte("tab\\t"),
+			want:  "tab\t",
+		},
+		{
+			name:  "all",
+			input: []byte("\\t\\xe2\\x9c\\xa8test\\n"),
+			want:  "\t✨test\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := decodeSSID(tc.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tc.want {
+				t.Fatalf("got %q, want %q", got, tc.want)
+			}
+			t.Logf("got: %q", got)
+		})
+	}
+}

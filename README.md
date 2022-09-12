@@ -238,7 +238,7 @@ iOS version 14 introduced ["private Wi-Fi addresses"](https://support.apple.com/
 When enabled, an iOS client will connect to APs using different MAC addresses. Consider disabling this feature for APs that
 you control and are running `wifi-presence` to help make presence detection configuration easier.
 
-## OpenWrt Luci Integration
+## Alternatives: OpenWrt Luci Integration
 
 The [OpenWrt Luci](https://www.home-assistant.io/integrations/luci/) integration similar presence detection functionality.
 
