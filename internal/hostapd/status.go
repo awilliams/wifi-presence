@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 )
@@ -56,20 +58,71 @@ func (s *Status) parse(p []byte) error {
 			}
 
 		case "ssid[0]":
-			if strings.HasPrefix(val, "\\x") {
-				val = strings.ReplaceAll(val, "\\x", "")
-				h, err := hex.DecodeString(val)
-				if err != nil {
-					return err
-				}
-				val = string(h)
+			if s.SSID, err = decodeSSID([]byte(val)); err != nil {
+				return err
 			}
-			s.SSID = val
-
 		case "bssid[0]":
 			s.BSSID = val
 		}
 	}
 
 	return scanner.Err()
+}
+
+// decodeSSID converts the hostap encoding of the SSID into a string,
+// respecting the special escape sequences for hex and other characters.
+// See printf_encode for more encoding info:
+// https://w1.fi/cgit/hostap/tree/src/utils/common.c?id=b20991da6936a1baae9f2239ee127610a6f5335d#n477
+func decodeSSID(v []byte) (string, error) {
+	r := bytes.NewReader(v)
+	var s strings.Builder
+	s.Grow(len(v))
+
+	for {
+		c, err := r.ReadByte()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return "", err
+		}
+		// Check for escape character.
+		if c != '\\' {
+			s.WriteByte(c)
+			continue
+		}
+
+		// Read control character.
+		c, err = r.ReadByte()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				err = io.ErrUnexpectedEOF
+			}
+			return "", fmt.Errorf("dangling escape: %w", err)
+		}
+
+		switch c {
+		case '"':
+			s.WriteRune('"')
+		case '\\':
+			s.WriteRune('\\')
+		case 'e':
+			s.WriteRune('\033')
+		case 'n':
+			s.WriteRune('\n')
+		case 'r':
+			s.WriteRune('\r')
+		case 't':
+			s.WriteRune('\t')
+		case 'x': // Hex
+			if _, err = io.Copy(&s, hex.NewDecoder(io.LimitReader(r, 2))); err != nil {
+				return "", err
+			}
+		default:
+			// Invalid or unknown escape char.
+			s.WriteByte(c)
+		}
+	}
+
+	return s.String(), nil
 }
