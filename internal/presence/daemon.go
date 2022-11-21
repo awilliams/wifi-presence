@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"strings"
 	"sync"
@@ -126,7 +126,7 @@ func NewDaemon(opts ...Opt) (*Daemon, error) {
 	}
 
 	if d.logger == nil {
-		d.logger = log.New(ioutil.Discard, "", 0)
+		d.logger = log.New(io.Discard, "", 0)
 	}
 	if d.db == nil {
 		d.db = newDebouncer(5 * time.Second)

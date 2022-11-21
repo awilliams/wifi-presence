@@ -38,10 +38,18 @@ func parseEvent(msg string) (Event, error) {
 
 	switch {
 	case strings.HasPrefix(msg, eventAPStaConnected):
-		// Station connect event. Example:
-		// "<3>AP-STA-CONNECTED 04:ab:00:12:34:56"
+		// Station connect event. Examples:
+		// AP-STA-CONNECTED 04:ab:00:12:34:56
+		// AP-STA-CONNECTED 04:ab:00:12:34:56 auth_alg=open
 
 		mac := strings.TrimSpace(strings.TrimPrefix(msg, eventAPStaConnected))
+
+		// Strip any trailing data after the MAC address.
+		// https://github.com/awilliams/wifi-presence/issues/12
+		if len(mac) > macLength {
+			mac = mac[:macLength]
+		}
+
 		if !isMAC(mac) {
 			return nil, fmt.Errorf("invalid MAC address %q", mac)
 		}
