@@ -17,6 +17,14 @@ func TestParseEvent(t *testing.T) {
 			},
 		},
 		{
+			name:  "connect with algo",
+			input: "AP-STA-CONNECTED 04:ab:00:12:34:56 auth_alg=open",
+			expected: EventStationConnect{
+				raw: "AP-STA-CONNECTED 04:ab:00:12:34:56 auth_alg=open",
+				MAC: "04:ab:00:12:34:56",
+			},
+		},
+		{
 			name:  "connect-lvl1",
 			input: "<1>AP-STA-CONNECTED 04:ab:00:12:34:56",
 			expected: EventStationConnect{

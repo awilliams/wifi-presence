@@ -6,8 +6,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -196,7 +196,7 @@ func run(ctx context.Context, appName string) error {
 
 	// Set all logging to /dev/null unless verbose flag was set.
 	if !args.verbose {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 	}
 
 	// Create MQTT client.
