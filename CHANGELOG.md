@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Update `go.mod` from Go 1.16 to Go 1.19
+- Update [eclipse/paho.mqtt.golang](https://github.com/eclipse/paho.mqtt.golang) library from `v1.3.5` to `v1.4.2`
+
 ## [v0.3.0] - 2022-11-20
 ### Fixed
 - Proper handling of new hostapd `AP-STA-CONNECTED` messages (#13)
