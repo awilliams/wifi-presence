@@ -18,3 +18,4 @@ build/bin/*
 cmd/wifi-presence/wifi-presence
 notes.md
 Makefile
+out/*

@@ -1,7 +1,7 @@
 services:
   homeassistant:
     container_name: 'ha'
-    image: 'homeassistant/home-assistant:2022.2.9'
+    image: 'homeassistant/home-assistant:2023.10.4'
     volumes:
       - './ha.yaml:/config/configuration.yaml'
     ports:
@@ -11,7 +11,7 @@ services:
 
   mosquitto:
     container_name: mosquitto
-    image: eclipse-mosquitto
+    image: eclipse-mosquitto:2.0.17
     volumes:
       - './mosquitto.conf:/mosquitto/config/mosquitto.conf:ro'
     ports:

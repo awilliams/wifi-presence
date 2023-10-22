@@ -5,11 +5,8 @@ homeassistant:
   name: Wifi Presence Test
   auth_providers:
     - type: trusted_networks
+      allow_bypass_login: true
       trusted_networks:
         - 172.0.0.0/8
         - 192.0.0.0/8
-      allow_bypass_login: true
     - type: homeassistant
-
-mqtt:
-  broker: "mosquitto"

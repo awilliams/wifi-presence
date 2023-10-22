@@ -13,8 +13,8 @@ type Configuration struct {
 
 // TrackConfig describes a single Wifi station/device to monitor for state changes.
 type TrackConfig struct {
-	Name string `json:"name"`
 	MAC  string `json:"mac"`
+	Name string `json:"name"`
 }
 
 // DeviceTracker is used to configure HomeAssistant to track a device.
@@ -38,21 +38,21 @@ type DeviceTracker struct {
 // Device is part of the DeviceTracker configuration.
 type Device struct {
 	Connections  [][2]string `json:"connections"`            // A list of connections of the device to the outside world as a list of tuples [connection_type, connection_identifier]. For example the MAC address of a network interface: 'connections': ['mac', '02:5b:26:a8:dc:12'].
-	Name         string      `json:"name,omitempty"`         // The name of the device.
-	ViaDevice    string      `json:"via_device,omitempty"`   // The name of the device.
 	Manufacturer string      `json:"manufacturer,omitempty"` // The manufacturer of the device.
+	Name         string      `json:"name,omitempty"`         // The name of the device.
+	ViaDevice    string      `json:"via_device,omitempty"`   // Identifier of a device that routes messages between this device and Home Assistant. Examples of such devices are hubs, or parent devices of a sub-device. This is used to show device topology in Home Assistant.
 }
 
 // Attrs are a device's attributes.
 type Attrs struct {
-	Name            string     `json:"name"`
-	MAC             string     `json:"mac_address"`
-	IsConnected     bool       `json:"is_connected"`
 	APName          string     `json:"ap_name"`
-	SSID            string     `json:"ssid"`
 	BSSID           string     `json:"bssid"`
 	ConnectedAt     *time.Time `json:"connected_at,omitempty"`
 	ConnectedFor    int        `json:"connected_for,omitempty"`
 	DisconnectedAt  *time.Time `json:"disconnected_at,omitempty"`
 	DisconnectedFor int        `json:"disconnected_for,omitempty"`
+	IsConnected     bool       `json:"is_connected"`
+	MAC             string     `json:"mac_address"`
+	Name            string     `json:"name"`
+	SSID            string     `json:"ssid"`
 }
