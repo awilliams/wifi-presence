@@ -217,13 +217,13 @@ func run(ctx context.Context, appName string) error {
 
 	statusCtx, statusCancel := context.WithTimeout(ctx, 2*time.Second)
 	defer statusCancel()
-	if err := mqtt.StatusOnline(statusCtx); err != nil {
+	if err = mqtt.StatusOnline(statusCtx); err != nil {
 		return err
 	}
 	defer func() {
 		// Cannot use main context since it may have already been cancelled.
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		_ = mqtt.StatusOffline(ctx)
+		mqttCloseCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		_ = mqtt.StatusOffline(mqttCloseCtx)
 		cancel()
 
 		mqtt.Close()
