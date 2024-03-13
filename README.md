@@ -228,8 +228,8 @@ Any connected stations will immediately be considered "connected", triggering a 
 The full version is included as part of various packages. For example, commands to install the full version using `wpad`:
 
 ```shell
-opkg remove wpad-basic-wolfssl
-opkg install wpad-wolfssl
+opkg remove wpad-basic-mbedtls
+opkg install wpad-mbedtls
 ```
 
 ## iOS
