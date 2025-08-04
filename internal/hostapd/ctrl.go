@@ -43,7 +43,7 @@ func newCtrl(cn *conn, rTimeout, wTimeout time.Duration) (*ctrl, error) {
 		readTimeout:  rTimeout,
 		writeTimeout: wTimeout,
 		conn:         cn,
-		buf:          make([]byte, 1024),
+		buf:          make([]byte, 2*1024),
 	}
 	if err := c.ping(); err != nil {
 		return nil, fmt.Errorf("ping error: %w", err)
