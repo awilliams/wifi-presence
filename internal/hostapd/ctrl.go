@@ -43,7 +43,9 @@ func newCtrl(cn *conn, rTimeout, wTimeout time.Duration) (*ctrl, error) {
 		readTimeout:  rTimeout,
 		writeTimeout: wTimeout,
 		conn:         cn,
-		buf:          make([]byte, 1024),
+		// It's unclear what the correct size to make this buffer is.
+		// See <https://github.com/awilliams/wifi-presence/issues/30> for details.
+		buf:          make([]byte, 4*1024),
 	}
 	if err := c.ping(); err != nil {
 		return nil, fmt.Errorf("ping error: %w", err)
