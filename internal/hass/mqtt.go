@@ -186,7 +186,7 @@ func (m *MQTT) RegisterDeviceTracker(ctx context.Context, dsc Discovery) error {
 		},
 		Icon:                icon,
 		JSONAttributesTopic: m.topics.DeviceJSONAttrs(dsc.MAC),
-		Name:                fmt.Sprintf("%s %s", dsc.Name, m.apName),
+		Name:                fmt.Sprintf("%s %s", dsc.MAC, m.apName), // This cannot start with 'dsc.Name'
 		ObjectID:            deviceID,
 		PayloadAvailable:    StatusOnline,
 		PayloadNotAvailable: StatusOffline,

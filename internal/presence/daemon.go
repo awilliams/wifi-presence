@@ -201,7 +201,7 @@ func (s staChange) String() string {
 	case staUpdated:
 		return "updated"
 	default:
-		return "?"
+		return fmt.Sprintf("?:%d", s)
 	}
 }
 
