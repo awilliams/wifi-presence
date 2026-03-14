@@ -24,7 +24,7 @@ type DeviceTracker struct {
 	Icon                string `json:"icon,omitempty"`                  // Icon for the entity. https://materialdesignicons.com
 	JSONAttributesTopic string `json:"json_attributes_topic,omitempty"` // The MQTT topic subscribed to receive a JSON dictionary payload and then set as device_tracker attributes. Usage example can be found in MQTT sensor documentation.
 	Name                string `json:"name,omitempty"`                  // The name of the MQTT device_tracker.
-	ObjectID            string `json:"object_id,omitempty"`             // Used instead of name for automatic generation of entity_id.
+	ObjectID            string `json:"default_entity_id,omitempty"`     // Used instead of name for automatic generation of entity_id.
 	PayloadAvailable    string `json:"payload_available,omitempty"`     // Default: online. The payload that represents the available state.
 	PayloadHome         string `json:"payload_home,omitempty"`          // Default: home. The payload value that represents the ‘home’ state for the device.
 	PayloadNotAvailable string `json:"payload_not_available,omitempty"` // Default: offline. The payload that represents the unavailable state.
