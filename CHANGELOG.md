@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Update `go.mod` from Go 1.16 to Go 1.19
 - Update [eclipse/paho.mqtt.golang](https://github.com/eclipse/paho.mqtt.golang) library from `v1.3.5` to `v1.4.2`
+- Skip station response lines that do not follow `key=value` format such as the `dot1` response received for WPA enterprise clients.
 
 ## [v0.3.0] - 2022-11-20
 ### Fixed

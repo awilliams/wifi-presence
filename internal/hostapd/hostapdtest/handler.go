@@ -212,6 +212,7 @@ type StationResp struct {
 func (s *StationResp) encode() string {
 	var b strings.Builder
 	fmt.Fprintln(&b, s.MAC)
+	fmt.Fprintln(&b, "dot1")
 	if s.Assoc {
 		fmt.Fprintln(&b, "flags=[ASSOC]")
 	}

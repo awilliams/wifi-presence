@@ -49,11 +49,12 @@ func (s *Station) parse(p []byte) error {
 			continue
 		}
 
-		// All following lines are in "key=val" format.
-
+		// All following lines are either in "key=val" format
+		// or single value format such as "dot1"
 		parts = strings.SplitN(line, "=", 2)
 		if len(parts) != 2 {
-			return fmt.Errorf("invalid station response line %q", line)
+			// skip the values we cannot parse
+			continue
 		}
 		key, val = parts[0], parts[1]
 

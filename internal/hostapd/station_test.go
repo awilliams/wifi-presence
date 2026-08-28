@@ -26,6 +26,7 @@ func TestStationParse(t *testing.T) {
 }
 
 const stationMsg = `fa:ce:aa:bb:12:34
+dot1
 flags=[AUTH][ASSOC][AUTHORIZED][WMM][HT][VHT]
 aid=6
 capability=0x111
