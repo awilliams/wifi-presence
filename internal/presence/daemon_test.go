@@ -227,7 +227,12 @@ func TestDaemon_State(t *testing.T) {
 		return attachMsgs
 	})
 
-	dt := newDaemonTest(t, h)
+	const zone = "zone.test"
+	dt := newDaemonTestWithOpts(t, []Opt{WithHassZone(zone)}, h)
+
+	// Subscribe to device's state and attrs topic.
+	testMACState := dt.subTopic(dt.topics.DeviceState(testMAC), true)
+	testMACAttrs := dt.subTopic(dt.topics.DeviceJSONAttrs(testMAC), true)
 
 	// Configure Daemon to track station.
 	trackingCfg := hass.Configuration{
@@ -237,10 +242,8 @@ func TestDaemon_State(t *testing.T) {
 	}
 	dt.pubTopic(dt.topics.Config(), true, trackingCfg)
 
-	// Subscribe to device's state topic.
-	testMACState := dt.subTopic(dt.topics.DeviceState(testMAC), true)
-
-	ensureState := func(want string) {
+	ensureState := func(want string, wantZones []string) {
+		t.Helper()
 		select {
 		case <-time.After(1 * time.Second):
 			t.Fatal("timeout waiting for device state message")
@@ -253,11 +256,20 @@ func TestDaemon_State(t *testing.T) {
 				t.Fatalf("got state %q; want %q", got, want)
 			}
 		}
+
+		select {
+		case <-time.After(1 * time.Second):
+			t.Fatal("timeout waiting for device attrs message")
+		case err := <-dt.errs:
+			t.Fatal(err)
+		case msg := <-testMACAttrs:
+			checkInZones(t, msg.Payload(), wantZones)
+		}
 	}
 
 	// The station is already connected, so there
 	// should be a state message.
-	ensureState(hass.PayloadHome)
+	ensureState(hass.PayloadHome, []string{zone})
 
 	// Send disconnect event.
 	select {
@@ -266,7 +278,7 @@ func TestDaemon_State(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("timeout sending disconnect event")
 	}
-	ensureState(hass.PayloadNotHome)
+	ensureState(hass.PayloadNotHome, []string{})
 
 	// Send connect event.
 	select {
@@ -275,7 +287,7 @@ func TestDaemon_State(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("timeout sending connect event")
 	}
-	ensureState(hass.PayloadHome)
+	ensureState(hass.PayloadHome, []string{zone})
 }
 
 func TestDaemon_MultiAPs(t *testing.T) {
@@ -326,6 +338,10 @@ func TestDaemon_MultiAPs(t *testing.T) {
 
 	dt := newDaemonTest(t, h1, h2)
 
+	// Subscribe to device's state and attrs topic.
+	testMACState := dt.subTopic(dt.topics.DeviceState(testMAC), true)
+	testMACAttrs := dt.subTopic(dt.topics.DeviceJSONAttrs(testMAC), true)
+
 	// Configure Daemon to track station.
 	trackingCfg := hass.Configuration{
 		Devices: []hass.TrackConfig{
@@ -334,11 +350,8 @@ func TestDaemon_MultiAPs(t *testing.T) {
 	}
 	dt.pubTopic(dt.topics.Config(), true, trackingCfg)
 
-	// Subscribe to device's state and attrs topic.
-	testMACState := dt.subTopic(dt.topics.DeviceState(testMAC), true)
-	testMACAttrs := dt.subTopic(dt.topics.DeviceJSONAttrs(testMAC), true)
-
 	ensureState := func(wantState, wantSSID string) {
+		t.Helper()
 		select {
 		case <-time.After(1 * time.Second):
 			t.Fatal("timeout waiting for device state message")
@@ -367,6 +380,12 @@ func TestDaemon_MultiAPs(t *testing.T) {
 				t.Fatalf("got SSID %q; want %q", got, wantSSID)
 			}
 			t.Logf("got SSID %q", attrs.SSID)
+
+			wantZones := []string{}
+			if wantState == hass.PayloadHome {
+				wantZones = []string{hass.ZoneHome}
+			}
+			checkInZones(t, msg.Payload(), wantZones)
 		}
 	}
 	sendEvent := func(hap chan string, event string) {
@@ -453,6 +472,10 @@ func TestDaemon_DelayedDisconnect(t *testing.T) {
 
 	dt := newDaemonTest(t, h1, h2)
 
+	// Subscribe to device's state and attrs topic.
+	testMACState := dt.subTopic(dt.topics.DeviceState(testMAC), true)
+	testMACAttrs := dt.subTopic(dt.topics.DeviceJSONAttrs(testMAC), true)
+
 	// Configure Daemon to track station.
 	trackingCfg := hass.Configuration{
 		Devices: []hass.TrackConfig{
@@ -460,10 +483,6 @@ func TestDaemon_DelayedDisconnect(t *testing.T) {
 		},
 	}
 	dt.pubTopic(dt.topics.Config(), true, trackingCfg)
-
-	// Subscribe to device's state and attrs topic.
-	testMACState := dt.subTopic(dt.topics.DeviceState(testMAC), true)
-	testMACAttrs := dt.subTopic(dt.topics.DeviceJSONAttrs(testMAC), true)
 
 	ensureState := func(wantState, wantSSID string) {
 		t.Helper()
@@ -478,10 +497,6 @@ func TestDaemon_DelayedDisconnect(t *testing.T) {
 			if got != wantState {
 				t.Fatalf("got state %q; want %q", got, wantState)
 			}
-		}
-
-		if wantSSID == "" {
-			return
 		}
 
 		select {
@@ -499,6 +514,12 @@ func TestDaemon_DelayedDisconnect(t *testing.T) {
 				t.Fatalf("got SSID %q; want %q", got, wantSSID)
 			}
 			t.Logf("got SSID %q", attrs.SSID)
+
+			wantZones := []string{}
+			if wantState == hass.PayloadHome {
+				wantZones = []string{hass.ZoneHome}
+			}
+			checkInZones(t, msg.Payload(), wantZones)
 		}
 	}
 
@@ -513,7 +534,8 @@ func TestDaemon_DelayedDisconnect(t *testing.T) {
 		}
 	}
 
-	// No SSID for initial disconnected state.
+	// No SSID for initial disconnected state, but attributes
+	// are still published to clear in_zones.
 	ensureState(hass.PayloadNotHome, "")
 
 	// Send h1 connect event.
@@ -544,6 +566,13 @@ func TestDaemon_DelayedDisconnect(t *testing.T) {
 }
 
 func newDaemonTest(t *testing.T, hapHandlers ...*hostapdtest.Handler) *daemonTest {
+	t.Helper()
+	return newDaemonTestWithOpts(t, nil, hapHandlers...)
+}
+
+// newDaemonTestWithOpts is like newDaemonTest, but applies the
+// given extra options to the Daemon.
+func newDaemonTestWithOpts(t *testing.T, extraOpts []Opt, hapHandlers ...*hostapdtest.Handler) *daemonTest {
 	if *mqttAddr == "" {
 		t.Skip("skipping test; not given mqttAddr")
 	}
@@ -623,6 +652,7 @@ func newDaemonTest(t *testing.T, hapHandlers ...*hostapdtest.Handler) *daemonTes
 	daemonOpts = append(daemonOpts, WithHassOpt(hm))
 	daemonOpts = append(daemonOpts, WithDebounce(0)) // Handle disconnect events immediately.
 	daemonOpts = append(daemonOpts, WithHASSAutodiscovery(true))
+	daemonOpts = append(daemonOpts, extraOpts...)
 	d, err := NewDaemon(daemonOpts...)
 	if err != nil {
 		t.Fatal(err)
@@ -672,6 +702,29 @@ func (d *daemonTest) pubTopic(topic string, retain bool, jsonPayload interface{}
 	if !tkn.WaitTimeout(time.Second) {
 		d.t.Fatalf("mqtt publish %q timeout", topic)
 	}
+}
+
+// checkInZones verifies the in_zones attribute of a raw attrs payload.
+// The raw JSON is compared so that an empty list ([]) is distinguished
+// from a missing or null value.
+func checkInZones(t *testing.T, payload []byte, want []string) {
+	t.Helper()
+	var attrs map[string]json.RawMessage
+	if err := json.Unmarshal(payload, &attrs); err != nil {
+		t.Fatal(err)
+	}
+	wantJSON, err := json.Marshal(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, ok := attrs["in_zones"]
+	if !ok {
+		t.Fatalf("attrs %s missing in_zones", payload)
+	}
+	if string(got) != string(wantJSON) {
+		t.Fatalf("got in_zones %s; want %s", got, wantJSON)
+	}
+	t.Logf("got in_zones %s", got)
 }
 
 func tempDir(t *testing.T) string {

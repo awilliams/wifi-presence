@@ -55,6 +55,10 @@ There is also a delay introduced by the ping frequency.
 wifi-presence integrates with Home Assistant using the [MQTT](https://www.home-assistant.io/integrations/device_tracker.mqtt/) integration.
 This can be enabled/disabled via the `-hass.autodiscovery` flag (true by default).
 
+Each device's attributes include an `in_zones` list, which Home Assistant (2026.7+) uses to determine zone membership.
+It contains the `-hass.zone` value (`zone.home` by default) while the device is connected, and is empty otherwise.
+With multiple access points, each wifi-presence instance can be configured with a different zone, e.g. `zone.backyard`.
+
 Although supported, Home Assistant isn't required.
 The messages published to MQTT can be consumed by any subscriber(s).
 
@@ -156,6 +160,8 @@ Options:
     	Enable Home Assistant MQTT autodiscovery (default true)
   -hass.prefix string
     	Home Assistant MQTT topic prefix (default "homeassistant")
+  -hass.zone string
+    	Home Assistant zone entity ID reported in the 'in_zones' attribute of connected devices (default "zone.home")
   -help
     	Print detailed help message
   -hostapd.socks string
@@ -199,10 +205,12 @@ The following topics are used:
   topics and registers/unregisters entities accordingly based on messages received.
 
   * `<PREFIX>/station/<AP_NAME>/<MAC>/state`
-  The state of a device (home / not_home) is published to these topics.
+  The state of a device (connected / not_connected) is published to these topics.
 
   * `<PREFIX>/station/<AP_NAME>/<MAC>/attrs`
   A JSON object with device attributes (SSID, BSSID, etc) is published to these topics.
+  The `in_zones` attribute contains the `-hass.zone` value while the device is connected,
+  and is empty otherwise. Home Assistant uses it to determine the device's zone.
 
 ## hostapd
 

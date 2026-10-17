@@ -44,6 +44,10 @@ type Device struct {
 }
 
 // Attrs are a device's attributes.
+//
+// InZones lists the Home Assistant zone entity IDs (e.g. "zone.home") the device
+// is in. Home Assistant derives zone membership from it, so it is intentionally
+// not omitempty: disconnected devices must send an empty list.
 type Attrs struct {
 	Name            string     `json:"name"`
 	MAC             string     `json:"mac_address"`
@@ -55,4 +59,5 @@ type Attrs struct {
 	ConnectedFor    int        `json:"connected_for,omitempty"`
 	DisconnectedAt  *time.Time `json:"disconnected_at,omitempty"`
 	DisconnectedFor int        `json:"disconnected_for,omitempty"`
+	InZones         []string   `json:"in_zones"`
 }

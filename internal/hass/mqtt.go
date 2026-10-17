@@ -23,6 +23,8 @@ const (
 	PayloadNotHome = "not_connected"
 	// SourceRouter is 'source' of the device tracker.
 	SourceRouter = "router"
+	// ZoneHome is the Home Assistant zone entity ID of the home zone.
+	ZoneHome = "zone.home"
 
 	icon = "mdi:wifi-marker" // https://materialdesignicons.com/icon/wifi-marker
 )

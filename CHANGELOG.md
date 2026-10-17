@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- `in_zones` device attribute for Home Assistant 2026.7+ zone membership, and the `-hass.zone` flag to set the reported zone (default `zone.home`) (#41)
+
+### Fixed
+- Device attributes are now also published for devices not connected at startup
+- Documented state payloads are `connected` / `not_connected`, not `home` / `not_home`
+
 ### Changed
 - Update `go.mod` from Go 1.16 to Go 1.19
 - Update [eclipse/paho.mqtt.golang](https://github.com/eclipse/paho.mqtt.golang) library from `v1.3.5` to `v1.4.2`

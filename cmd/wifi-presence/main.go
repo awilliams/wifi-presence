@@ -64,10 +64,12 @@ The following topics are used:
   topics and registers/unregisters entities accordingly based on messages received.
 
   * <PREFIX>/station/<AP_NAME>/<MAC>/state
-  The state of a device (home / not_home) is published to these topics.
+  The state of a device (connected / not_connected) is published to these topics.
 
   * <PREFIX>/station/<AP_NAME>/<MAC>/attrs
   A JSON object with device attributes (SSID, BSSID, etc) is published to these topics.
+  The 'in_zones' attribute contains the -hass.zone value while the device is connected,
+  and is empty otherwise. Home Assistant uses it to determine the device's zone.
 `
 
 func main() {
@@ -109,6 +111,7 @@ func run(ctx context.Context, appName string) error {
 		mqttPassword      string
 		hassAutodiscovery bool
 		hassPrefix        string
+		hassZone          string
 		debounce          time.Duration
 		verbose           bool
 
@@ -132,6 +135,7 @@ func run(ctx context.Context, appName string) error {
 		mqttPrefix:        appName,
 		hassAutodiscovery: true,
 		hassPrefix:        "homeassistant",
+		hassZone:          hass.ZoneHome,
 		debounce:          10 * time.Second,
 		verbose:           false,
 		version:           false,
@@ -148,6 +152,7 @@ func run(ctx context.Context, appName string) error {
 	flag.StringVar(&args.mqttPassword, "mqtt.password", args.mqttPassword, "MQTT password (optional)")
 	flag.BoolVar(&args.hassAutodiscovery, "hass.autodiscovery", args.hassAutodiscovery, "Enable Home Assistant MQTT autodiscovery")
 	flag.StringVar(&args.hassPrefix, "hass.prefix", args.hassPrefix, "Home Assistant MQTT topic prefix")
+	flag.StringVar(&args.hassZone, "hass.zone", args.hassZone, "Home Assistant zone entity ID reported in the 'in_zones' attribute of connected devices")
 	flag.DurationVar(&args.debounce, "debounce", args.debounce, "Time to wait until considering a station disconnected. Examples: 5s, 1m")
 	flag.BoolVar(&args.verbose, "verbose", args.verbose, "Verbose logging")
 	flag.BoolVar(&args.verbose, "v", args.verbose, "Verbose logging (alias)")
@@ -186,6 +191,9 @@ func run(ctx context.Context, appName string) error {
 	}
 	if args.mqttPrefix == "" {
 		return errors.New("mqtt.prefix cannot be blank")
+	}
+	if args.hassZone == "" {
+		return errors.New("hass.zone cannot be blank")
 	}
 
 	if args.hassAutodiscovery {
@@ -249,6 +257,7 @@ func run(ctx context.Context, appName string) error {
 	opts = append(opts, presence.WithLogger(log.Default()))
 	opts = append(opts, presence.WithDebounce(args.debounce))
 	opts = append(opts, presence.WithHASSAutodiscovery(args.hassAutodiscovery))
+	opts = append(opts, presence.WithHassZone(args.hassZone))
 	for _, hap := range hostapds {
 		opts = append(opts, presence.WithHostAPD(hap))
 	}

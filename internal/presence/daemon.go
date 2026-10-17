@@ -65,6 +65,15 @@ func WithHASSAutodiscovery(ad bool) Opt {
 	}
 }
 
+// WithHassZone sets the Home Assistant zone entity ID (e.g. "zone.home")
+// reported in the in_zones attribute of connected stations.
+// Defaults to hass.ZoneHome.
+func WithHassZone(zone string) Opt {
+	return func(d *Daemon) {
+		d.hassZone = zone
+	}
+}
+
 // Daemon runs the main wifi-presence program loop.
 type Daemon struct {
 	apName       string
@@ -73,6 +82,7 @@ type Daemon struct {
 	logger       *log.Logger
 	db           *debouncer
 	hassAutoDisc bool
+	hassZone     string
 
 	mu sync.Mutex
 	// An entry here implies that the stations is configured to be tracked.
@@ -130,6 +140,9 @@ func NewDaemon(opts ...Opt) (*Daemon, error) {
 	}
 	if d.db == nil {
 		d.db = newDebouncer(5 * time.Second)
+	}
+	if d.hassZone == "" {
+		d.hassZone = hass.ZoneHome
 	}
 
 	return &d, nil
@@ -314,6 +327,22 @@ func (d *Daemon) onConfigChange(ctx context.Context, retained bool, cfg hass.Con
 				if err := d.hass.StationNotHome(pubCtx, mac.String()); err != nil {
 					return err
 				}
+
+				// Attributes are published as well, since they may still contain
+				// a (retained) non-empty in_zones from a previous run.
+				attrs := hass.Attrs{
+					Name:        sta.name,
+					MAC:         sta.mac.String(),
+					IsConnected: false,
+					APName:      d.apName,
+					InZones:     []string{},
+				}
+
+				pubCtx, cancel = context.WithTimeout(ctx, 2*time.Second)
+				defer cancel()
+				if err := d.hass.StationAttributes(pubCtx, mac.String(), attrs); err != nil {
+					return err
+				}
 				break
 			}
 
@@ -335,6 +364,7 @@ func (d *Daemon) onConfigChange(ctx context.Context, retained bool, cfg hass.Con
 				BSSID:        cs.hapStatus.BSSID,
 				ConnectedAt:  &sta.connectedAt,
 				ConnectedFor: int(time.Since(sta.connectedAt).Seconds()),
+				InZones:      []string{d.hassZone},
 			}
 
 			pubCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
@@ -424,6 +454,7 @@ func (d *Daemon) onHostapdEvent(ctx context.Context, hap hap, event hostapd.Even
 				}
 				return int(time.Since(sta.disconnectedAt).Seconds())
 			}(),
+			InZones: []string{d.hassZone},
 		}
 
 		pubCtx, cancel = context.WithTimeout(ctx, 2*time.Second)
@@ -484,6 +515,7 @@ func (d *Daemon) onHostapdEvent(ctx context.Context, hap hap, event hostapd.Even
 				BSSID:          hap.status.BSSID,
 				ConnectedFor:   int(time.Since(sta.connectedAt).Seconds()),
 				DisconnectedAt: &sta.disconnectedAt,
+				InZones:        []string{},
 			}
 
 			pubCtx, cancel = context.WithTimeout(ctx, 2*time.Second)
